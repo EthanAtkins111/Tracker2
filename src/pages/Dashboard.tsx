@@ -6,7 +6,7 @@ import { PriorityBadge, DaysSinceBadge } from "@/components/StatusBadges";
 import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
-import { getAccounts, getFollowUps, getContacts, getLastInteraction, seedData } from "@/lib/store";
+import { getAccounts, getFollowUps, getContacts, getLastInteraction, seedData, resetAndSeed } from "@/lib/store";
 import { useStoreRefresh } from "@/hooks/use-store-refresh";
 import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock } from "lucide-react";
 
@@ -17,7 +17,16 @@ export default function Dashboard() {
   const [showInteraction, setShowInteraction] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { seedData(); }, []);
+  useEffect(() => {
+    // Force re-seed with region data if version flag is missing
+    const SEED_VERSION = 'region_v2';
+    if (localStorage.getItem('crm_seed_version') !== SEED_VERSION) {
+      resetAndSeed();
+      localStorage.setItem('crm_seed_version', SEED_VERSION);
+    } else {
+      seedData();
+    }
+  }, []);
 
   const accounts = getAccounts();
   const followUps = getFollowUps().filter(f => f.status === 'Pending');
