@@ -14,6 +14,7 @@ import Opportunities from "@/pages/Opportunities";
 import UserManagement from "@/pages/UserManagement";
 import Auth from "@/pages/Auth";
 import PendingApproval from "@/pages/PendingApproval";
+import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/follow-ups" element={<FollowUps />} />
         <Route path="/opportunities" element={<Opportunities />} />
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
