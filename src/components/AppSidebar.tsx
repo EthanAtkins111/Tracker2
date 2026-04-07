@@ -27,7 +27,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { userRole } = useAuth();
+  const _auth = useAuth();
 
   return (
     <Sidebar collapsible="icon">
