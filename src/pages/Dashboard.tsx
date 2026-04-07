@@ -6,7 +6,7 @@ import { PriorityBadge, DaysSinceBadge } from "@/components/StatusBadges";
 import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
-import { getAccounts, getFollowUps, getContacts, getLastInteraction, seedData } from "@/lib/store";
+import { getAccounts, getFollowUps, getContacts, getLastInteraction, seedData, resetAndSeed } from "@/lib/store";
 import { useStoreRefresh } from "@/hooks/use-store-refresh";
 import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock } from "lucide-react";
 
