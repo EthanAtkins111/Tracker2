@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Account, Contact } from "@/lib/types";
 import { createContact, editContact } from "@/lib/supabase-store";
 import { toast } from "sonner";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const roles = ['OT', 'PT', 'Nurse Manager', 'Director of Care', 'General Manager', 'Physician', 'Physiatrist', 'Administrator', 'Other'];
 
@@ -30,6 +34,12 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, a
     notes: contact?.notes || '',
   });
   const [saving, setSaving] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  const selectedAccountName = useMemo(
+    () => accounts.find(a => a.id === form.accountId)?.name || '',
+    [accounts, form.accountId]
+  );
 
   const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
 
@@ -56,7 +66,7 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, a
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{contact ? 'Edit Contact' : 'Add Contact'}</DialogTitle>
         </DialogHeader>
@@ -72,31 +82,66 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, a
               <SelectContent>{roles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label>Phone</Label>
-              <Input value={form.phone} onChange={e => update('phone', e.target.value)} />
+              <Input type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} />
             </div>
             <div className="grid gap-1.5">
               <Label>Email</Label>
-              <Input value={form.email} onChange={e => update('email', e.target.value)} />
+              <Input type="email" value={form.email} onChange={e => update('email', e.target.value)} />
             </div>
           </div>
           <div className="grid gap-1.5">
             <Label>Account</Label>
-            <Select value={form.accountId} onValueChange={v => update('accountId', v)}>
-              <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-              <SelectContent>{accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Popover open={accountOpen} onOpenChange={setAccountOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={accountOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {selectedAccountName || "Search accounts..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search accounts..." />
+                  <CommandList>
+                    <CommandEmpty>No accounts found.</CommandEmpty>
+                    <CommandGroup className="max-h-[200px] overflow-y-auto">
+                      {accounts.map(a => (
+                        <CommandItem
+                          key={a.id}
+                          value={a.name}
+                          onSelect={() => {
+                            update('accountId', a.id);
+                            setAccountOpen(false);
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.accountId === a.id ? "opacity-100" : "opacity-0")} />
+                          <span className="truncate">{a.name}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">{a.city}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid gap-1.5">
             <Label>Notes</Label>
             <Textarea value={form.notes} onChange={e => update('notes', e.target.value)} rows={2} />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : (contact ? 'Save' : 'Add Contact')}</Button>
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancel</Button>
+          <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">{saving ? 'Saving...' : (contact ? 'Save' : 'Add Contact')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
