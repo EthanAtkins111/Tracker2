@@ -43,6 +43,8 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
   const [followUpChoice, setFollowUpChoice] = useState('None');
   const [customDate, setCustomDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const contacts = accountId ? allContacts.filter(c => c.accountId === accountId) : [];
 
