@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Account, Contact, Interaction, FollowUp } from '@/lib/types';
 import * as store from '@/lib/supabase-store';
+import { deduplicateAccounts } from '@/lib/supabase-store';
 
 export function useCrmData() {
   const { user } = useAuth();
@@ -30,8 +31,11 @@ export function useCrmData() {
 
   useEffect(() => {
     if (user) {
-      // Seed on first login then load
-      store.seedRegionData().then(refresh).catch(() => refresh());
+      // Deduplicate then seed on first login then load
+      deduplicateAccounts()
+        .then(() => store.seedRegionData())
+        .then(refresh)
+        .catch(() => refresh());
     }
   }, [user, refresh]);
 
