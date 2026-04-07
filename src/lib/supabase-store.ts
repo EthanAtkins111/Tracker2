@@ -1,11 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Account, Contact, Interaction, FollowUp, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus } from './types';
 
-// Helper to get current user id
-async function getUserId(): Promise<string> {
+// Helper to get current user's store id
+async function getStoreId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
-  return user.id;
+  const { data } = await supabase
+    .from('store_members')
+    .select('store_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .single();
+  if (!data) throw new Error('No store membership found');
+  return data.store_id as string;
 }
 
 // ===== ACCOUNTS =====
