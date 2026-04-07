@@ -112,6 +112,12 @@ export function deleteFollowUp(id: string) {
   save(STORAGE_KEYS.followUps, getFollowUps().filter(f => f.id !== id));
 }
 
+// Reset and re-seed
+export function resetAndSeed() {
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  seedData();
+}
+
 // Seed data from REGION_DATA.xlsx
 export function seedData() {
   if (getAccounts().length > 0) return;
