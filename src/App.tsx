@@ -11,13 +11,15 @@ import AccountDetail from "@/pages/AccountDetail";
 import Contacts from "@/pages/Contacts";
 import FollowUps from "@/pages/FollowUps";
 import Opportunities from "@/pages/Opportunities";
+import UserManagement from "@/pages/UserManagement";
 import Auth from "@/pages/Auth";
+import PendingApproval from "@/pages/PendingApproval";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, approved } = useAuth();
 
   if (loading) {
     return (
@@ -28,6 +30,7 @@ function AppRoutes() {
   }
 
   if (!user) return <Auth />;
+  if (!approved) return <PendingApproval />;
 
   return (
     <Layout>
@@ -38,6 +41,7 @@ function AppRoutes() {
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/follow-ups" element={<FollowUps />} />
         <Route path="/opportunities" element={<Opportunities />} />
+        <Route path="/users" element={<UserManagement />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
