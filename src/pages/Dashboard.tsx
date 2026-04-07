@@ -17,7 +17,16 @@ export default function Dashboard() {
   const [showInteraction, setShowInteraction] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { seedData(); }, []);
+  useEffect(() => {
+    // Force re-seed with region data if version flag is missing
+    const SEED_VERSION = 'region_v2';
+    if (localStorage.getItem('crm_seed_version') !== SEED_VERSION) {
+      resetAndSeed();
+      localStorage.setItem('crm_seed_version', SEED_VERSION);
+    } else {
+      seedData();
+    }
+  }, []);
 
   const accounts = getAccounts();
   const followUps = getFollowUps().filter(f => f.status === 'Pending');
