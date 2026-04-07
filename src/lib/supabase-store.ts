@@ -264,10 +264,18 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
 // ===== SEED REGION DATA =====
 export async function seedRegionData(): Promise<void> {
   // Check if user already has accounts
-  const { count } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
-  if (count && count > 0) return;
+  const { count, error: countErr } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
+  if (countErr) { console.error('Seed count check failed:', countErr); return; }
+  if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
 
-  const storeId = await getStoreId();
+  let storeId: string;
+  try {
+    storeId = await getStoreId();
+  } catch (e) {
+    console.error('Seed failed – no store membership:', e);
+    return;
+  }
+  console.log('Seeding region data for store:', storeId);
 
   const accounts = [
     // LTC
