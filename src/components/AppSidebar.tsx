@@ -27,7 +27,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const _auth = useAuth();
+  
 
   return (
     <Sidebar collapsible="icon">
@@ -43,9 +43,6 @@ export function AppSidebar() {
                 <p className="text-xs text-muted-foreground">Territory CRM</p>
               </div>
             </div>
-            {userRole && (
-              <Badge variant="secondary" className="mt-2 text-xs">{userRole}</Badge>
-            )}
           </div>
         )}
         <SidebarGroup>
