@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StoreRole } from '@/lib/types';
 
 export default function Auth() {
   const { signIn, signUp } = useAuth();
@@ -15,6 +17,8 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
+  const [storeCode, setStoreCode] = useState('');
+  const [role, setRole] = useState<StoreRole>('Rep');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,13 +39,17 @@ export default function Auth() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (!storeCode.trim()) {
+      toast.error('Store code is required');
+      return;
+    }
     setLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword);
+    const { error } = await signUp(signupEmail, signupPassword, storeCode.trim(), role);
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created! Check your email to confirm, or sign in directly.');
+      toast.success('Account created! You can now sign in.');
     }
   };
 
@@ -89,6 +97,30 @@ export default function Auth() {
                 <div className="space-y-1.5">
                   <Label>Confirm Password</Label>
                   <Input type="password" value={signupConfirm} onChange={e => setSignupConfirm(e.target.value)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Store Code</Label>
+                  <Input
+                    placeholder="e.g. OW-STC"
+                    value={storeCode}
+                    onChange={e => setStoreCode(e.target.value.toUpperCase())}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Enter your team's store code to share data</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Role</Label>
+                  <Select value={role} onValueChange={(v) => setRole(v as StoreRole)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Rep">Rep</SelectItem>
+                      <SelectItem value="Admin">Admin</SelectItem>
+                      <SelectItem value="Service">Service</SelectItem>
+                      <SelectItem value="Manager">Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}

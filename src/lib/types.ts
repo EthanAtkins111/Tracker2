@@ -3,6 +3,7 @@ export type PriorityTier = 'High' | 'Medium' | 'Low';
 export type RelationshipStrength = 'Strong' | 'Moderate' | 'Weak' | 'New';
 export type InteractionType = 'Visit' | 'Call' | 'Email' | 'Demo' | 'Service Follow-up';
 export type FollowUpStatus = 'Pending' | 'Completed';
+export type StoreRole = 'Rep' | 'Admin' | 'Service' | 'Manager';
 
 export interface Account {
   id: string;
@@ -49,4 +50,11 @@ export interface FollowUp {
   type: string;
   status: FollowUpStatus;
   notes: string;
+}
+
+export interface StoreMember {
+  id: string;
+  userId: string;
+  storeId: string;
+  role: StoreRole;
 }
