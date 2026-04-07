@@ -7,7 +7,7 @@ import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
-import { fetchLastInteraction } from "@/lib/supabase-store";
+import { fetchLastInteraction, seedRegionData } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock, LogOut } from "lucide-react";
 import { useEffect } from "react";
