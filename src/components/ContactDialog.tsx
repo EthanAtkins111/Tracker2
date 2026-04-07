@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Contact } from "@/lib/types";
-import { getAccounts, saveContact, updateContact } from "@/lib/store";
+import { Account, Contact } from "@/lib/types";
+import { createContact, editContact } from "@/lib/supabase-store";
 import { toast } from "sonner";
 
 const roles = ['OT', 'PT', 'Nurse Manager', 'Director of Care', 'General Manager', 'Physician', 'Physiatrist', 'Administrator', 'Other'];
@@ -16,11 +16,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   contact?: Contact;
   defaultAccountId?: string;
+  accounts: Account[];
   onSaved: () => void;
 }
 
-export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, onSaved }: Props) {
-  const accounts = getAccounts();
+export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, accounts, onSaved }: Props) {
   const [form, setForm] = useState({
     name: contact?.name || '',
     role: contact?.role || '',
@@ -29,21 +29,29 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, o
     accountId: contact?.accountId || defaultAccountId || '',
     notes: contact?.notes || '',
   });
+  const [saving, setSaving] = useState(false);
 
   const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     if (!form.accountId) { toast.error('Please select an account'); return; }
-    if (contact) {
-      updateContact(contact.id, form);
-      toast.success('Contact updated');
-    } else {
-      saveContact(form);
-      toast.success('Contact added');
+    setSaving(true);
+    try {
+      if (contact) {
+        await editContact(contact.id, form);
+        toast.success('Contact updated');
+      } else {
+        await createContact(form);
+        toast.success('Contact added');
+      }
+      onSaved();
+      onOpenChange(false);
+    } catch {
+      toast.error('Failed to save contact');
+    } finally {
+      setSaving(false);
     }
-    onSaved();
-    onOpenChange(false);
   };
 
   return (
@@ -88,7 +96,7 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, o
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>{contact ? 'Save' : 'Add Contact'}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : (contact ? 'Save' : 'Add Contact')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
