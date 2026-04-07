@@ -254,12 +254,47 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
   };
 }
 
+// ===== DEDUPLICATE ACCOUNTS =====
+export async function deduplicateAccounts(): Promise<number> {
+  const { data, error } = await supabase.from('accounts').select('id, name').order('created_at', { ascending: true });
+  if (error || !data) return 0;
+  const seen = new Map<string, string>();
+  const dupeIds: string[] = [];
+  for (const row of data) {
+    const key = (row.name as string).toLowerCase().trim();
+    if (seen.has(key)) {
+      dupeIds.push(row.id as string);
+    } else {
+      seen.set(key, row.id as string);
+    }
+  }
+  if (dupeIds.length === 0) return 0;
+  // Delete in batches
+  for (let i = 0; i < dupeIds.length; i += 50) {
+    const batch = dupeIds.slice(i, i + 50);
+    await supabase.from('follow_ups').delete().in('account_id', batch);
+    await supabase.from('interactions').delete().in('account_id', batch);
+    await supabase.from('contacts').delete().in('account_id', batch);
+    await supabase.from('accounts').delete().in('id', batch);
+  }
+  return dupeIds.length;
+}
+
 // ===== SEED REGION DATA =====
 export async function seedRegionData(force = false): Promise<void> {
   if (!force) {
     const { count, error: countErr } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
     if (countErr) { console.error('Seed count check failed:', countErr); return; }
     if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
+  }
+
+  if (force) {
+    // Clear existing accounts to prevent duplicates
+    const userId = await getUserId();
+    await supabase.from('follow_ups').delete().eq('user_id', userId);
+    await supabase.from('interactions').delete().eq('user_id', userId);
+    await supabase.from('contacts').delete().eq('user_id', userId);
+    await supabase.from('accounts').delete().eq('user_id', userId);
   }
 
   const userId = await getUserId();
