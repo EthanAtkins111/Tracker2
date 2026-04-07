@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { InteractionType } from "@/lib/types";
-import { getAccounts, getContactsByAccount, saveInteraction, saveFollowUp } from "@/lib/store";
+import { Account, Contact, InteractionType } from "@/lib/types";
+import { createInteraction, createFollowUp } from "@/lib/supabase-store";
 import { toast } from "sonner";
 
 const interactionTypes: InteractionType[] = ['Visit', 'Call', 'Email', 'Demo', 'Service Follow-up'];
@@ -24,11 +24,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   defaultAccountId?: string;
   defaultContactId?: string;
+  accounts: Account[];
+  contacts: Contact[];
   onSaved: () => void;
 }
 
-export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaultContactId, onSaved }: Props) {
-  const accounts = getAccounts();
+export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaultContactId, accounts, contacts: allContacts, onSaved }: Props) {
   const [accountId, setAccountId] = useState(defaultAccountId || '');
   const [contactId, setContactId] = useState(defaultContactId || '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -37,31 +38,39 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
   const [outcome, setOutcome] = useState('');
   const [followUpChoice, setFollowUpChoice] = useState('None');
   const [customDate, setCustomDate] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const contacts = accountId ? getContactsByAccount(accountId) : [];
+  const contacts = accountId ? allContacts.filter(c => c.accountId === accountId) : [];
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!accountId) { toast.error('Select an account'); return; }
-    saveInteraction({ date, accountId, contactId, type, notes, outcome });
+    setSaving(true);
+    try {
+      await createInteraction({ date, accountId, contactId, type, notes, outcome });
 
-    const option = followUpOptions.find(o => o.label === followUpChoice);
-    if (option && option.days >= 0) {
-      let dueDate: string;
-      if (option.days === 0) {
-        if (!customDate) { toast.error('Set a custom follow-up date'); return; }
-        dueDate = customDate;
+      const option = followUpOptions.find(o => o.label === followUpChoice);
+      if (option && option.days >= 0) {
+        let dueDate: string;
+        if (option.days === 0) {
+          if (!customDate) { toast.error('Set a custom follow-up date'); setSaving(false); return; }
+          dueDate = customDate;
+        } else {
+          const d = new Date();
+          d.setDate(d.getDate() + option.days);
+          dueDate = d.toISOString().split('T')[0];
+        }
+        await createFollowUp({ accountId, contactId, dueDate, type: followUpChoice, status: 'Pending', notes: '' });
+        toast.success('Interaction logged with follow-up scheduled');
       } else {
-        const d = new Date();
-        d.setDate(d.getDate() + option.days);
-        dueDate = d.toISOString().split('T')[0];
+        toast.success('Interaction logged');
       }
-      saveFollowUp({ accountId, contactId, dueDate, type: followUpChoice, status: 'Pending', notes: '' });
-      toast.success('Interaction logged with follow-up scheduled');
-    } else {
-      toast.success('Interaction logged');
+      onSaved();
+      onOpenChange(false);
+    } catch {
+      toast.error('Failed to log interaction');
+    } finally {
+      setSaving(false);
     }
-    onSaved();
-    onOpenChange(false);
   };
 
   return (
@@ -112,13 +121,7 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
             <Label className="text-sm font-medium">Schedule Follow-up</Label>
             <div className="flex flex-wrap gap-2 mt-2">
               {followUpOptions.map(o => (
-                <Button
-                  key={o.label}
-                  type="button"
-                  size="sm"
-                  variant={followUpChoice === o.label ? 'default' : 'outline'}
-                  onClick={() => setFollowUpChoice(o.label)}
-                >
+                <Button key={o.label} type="button" size="sm" variant={followUpChoice === o.label ? 'default' : 'outline'} onClick={() => setFollowUpChoice(o.label)}>
                   {o.label}
                 </Button>
               ))}
@@ -130,7 +133,7 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Log Interaction</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Log Interaction'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

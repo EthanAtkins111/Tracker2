@@ -5,34 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PriorityBadge } from "@/components/StatusBadges";
-import { getFollowUps, getAccounts, getContacts, updateFollowUp } from "@/lib/store";
-import { useStoreRefresh } from "@/hooks/use-store-refresh";
+import { useCrmData } from "@/hooks/use-crm-data";
+import { editFollowUp } from "@/lib/supabase-store";
 import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function FollowUps() {
-  const refresh = useStoreRefresh();
+  const { followUps, loading, refresh, getAccountName, getAccountCity, getAccountPriority, getContactName } = useCrmData();
   const navigate = useNavigate();
   const [tab, setTab] = useState('pending');
 
-  const followUps = getFollowUps();
-  const accounts = getAccounts();
-  const contacts = getContacts();
-  const today = new Date().toISOString().split('T')[0];
+  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
 
+  const today = new Date().toISOString().split('T')[0];
   const filtered = followUps
     .filter(f => tab === 'pending' ? f.status === 'Pending' : f.status === 'Completed')
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-  const getAccountName = (id: string) => accounts.find(a => a.id === id)?.name || 'Unknown';
-  const getAccountCity = (id: string) => accounts.find(a => a.id === id)?.city || '';
-  const getAccountPriority = (id: string) => accounts.find(a => a.id === id)?.priorityTier || 'Low';
-  const getContactName = (id: string) => contacts.find(c => c.id === id)?.name || '';
-
-  const handleComplete = (id: string) => { updateFollowUp(id, { status: 'Completed' }); toast.success('Done'); refresh(); };
-  const handleSnooze = (id: string) => {
+  const handleComplete = async (id: string) => { await editFollowUp(id, { status: 'Completed' }); toast.success('Done'); refresh(); };
+  const handleSnooze = async (id: string) => {
     const d = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-    updateFollowUp(id, { dueDate: d }); toast.success('Snoozed 1 week'); refresh();
+    await editFollowUp(id, { dueDate: d }); toast.success('Snoozed 1 week'); refresh();
   };
 
   return (
@@ -44,7 +37,6 @@ export default function FollowUps() {
           <TabsTrigger value="completed">Completed</TabsTrigger>
         </TabsList>
       </Tabs>
-
       <div className="space-y-2">
         {filtered.length === 0 && <p className="text-muted-foreground text-sm py-8 text-center">{tab === 'pending' ? 'No pending follow-ups' : 'No completed follow-ups'}</p>}
         {filtered.map(f => {
@@ -52,35 +44,22 @@ export default function FollowUps() {
           return (
             <Card key={f.id} className={`p-4 ${overdue ? 'border-destructive/30' : ''}`}>
               <div className="flex items-center justify-between">
-                <div
-                  className="min-w-0 cursor-pointer"
-                  onClick={() => navigate(`/accounts/${f.accountId}`)}
-                >
+                <div className="min-w-0 cursor-pointer" onClick={() => navigate(`/accounts/${f.accountId}`)}>
                   <div className="flex items-center gap-2">
                     {overdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
                     <p className="font-medium text-sm truncate">{getAccountName(f.accountId)}</p>
                     <PriorityBadge tier={getAccountPriority(f.accountId)} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {getAccountCity(f.accountId)}
-                    {getContactName(f.contactId) && ` · ${getContactName(f.contactId)}`}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{getAccountCity(f.accountId)}{getContactName(f.contactId) && ` · ${getContactName(f.contactId)}`}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(f.dueDate).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{new Date(f.dueDate).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                     <Badge variant="outline" className="text-xs">{f.type}</Badge>
-                    {f.notes && <span className="text-xs text-muted-foreground">· {f.notes}</span>}
                   </div>
                 </div>
                 {f.status === 'Pending' && (
                   <div className="flex gap-1.5 shrink-0 ml-2">
-                    <Button size="sm" variant="outline" onClick={() => handleSnooze(f.id)}>
-                      <Clock className="h-3 w-3 mr-1" /> Snooze
-                    </Button>
-                    <Button size="sm" onClick={() => handleComplete(f.id)}>
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> Done
-                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleSnooze(f.id)}><Clock className="h-3 w-3 mr-1" /> Snooze</Button>
+                    <Button size="sm" onClick={() => handleComplete(f.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Done</Button>
                   </div>
                 )}
               </div>

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Account, AccountType, PriorityTier, RelationshipStrength } from "@/lib/types";
-import { saveAccount, updateAccount } from "@/lib/store";
+import { createAccount, editAccount } from "@/lib/supabase-store";
 import { toast } from "sonner";
 
 const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 'Group Home'];
@@ -35,24 +35,32 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
   });
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
-    const data = {
-      ...form,
-      bedCount: parseInt(form.bedCount) || 0,
-      adpVolume: parseInt(form.adpVolume) || 0,
-      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-    };
-    if (account) {
-      updateAccount(account.id, data);
-      toast.success('Account updated');
-    } else {
-      saveAccount(data);
-      toast.success('Account created');
+    setSaving(true);
+    try {
+      const data = {
+        ...form,
+        bedCount: parseInt(form.bedCount) || 0,
+        adpVolume: parseInt(form.adpVolume) || 0,
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      };
+      if (account) {
+        await editAccount(account.id, data);
+        toast.success('Account updated');
+      } else {
+        await createAccount(data);
+        toast.success('Account created');
+      }
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      toast.error('Failed to save account');
+    } finally {
+      setSaving(false);
     }
-    onSaved();
-    onOpenChange(false);
   };
 
   const update = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
@@ -132,7 +140,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>{account ? 'Save Changes' : 'Create Account'}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : (account ? 'Save Changes' : 'Create Account')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
