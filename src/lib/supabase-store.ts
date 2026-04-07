@@ -262,11 +262,13 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
 }
 
 // ===== SEED REGION DATA =====
-export async function seedRegionData(): Promise<void> {
-  // Check if user already has accounts
-  const { count, error: countErr } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
-  if (countErr) { console.error('Seed count check failed:', countErr); return; }
-  if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
+export async function seedRegionData(force = false): Promise<void> {
+  if (!force) {
+    // Check if user already has accounts
+    const { count, error: countErr } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
+    if (countErr) { console.error('Seed count check failed:', countErr); return; }
+    if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
+  }
 
   let storeId: string;
   try {

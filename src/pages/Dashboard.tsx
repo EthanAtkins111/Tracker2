@@ -7,9 +7,10 @@ import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
-import { fetchLastInteraction } from "@/lib/supabase-store";
+import { fetchLastInteraction, seedRegionData } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock, LogOut } from "lucide-react";
+import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock, LogOut, Database } from "lucide-react";
+import { toast } from "sonner";
 import { useEffect } from "react";
 import { Interaction } from "@/lib/types";
 
@@ -90,6 +91,19 @@ export default function Dashboard() {
           </Button>
           <Button size="sm" variant="outline" onClick={() => setShowContact(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Contact
+          </Button>
+          <Button size="sm" variant="outline" onClick={async () => {
+            try {
+              toast.info('Loading sample data...');
+              await seedRegionData(true);
+              await refresh();
+              toast.success('Sample data loaded!');
+            } catch (e: any) {
+              toast.error('Failed: ' + (e?.message || 'Unknown error'));
+              console.error('Seed error:', e);
+            }
+          }}>
+            <Database className="mr-1.5 h-3.5 w-3.5" /> Load Data
           </Button>
           <Button size="sm" variant="ghost" onClick={signOut}>
             <LogOut className="h-3.5 w-3.5" />
