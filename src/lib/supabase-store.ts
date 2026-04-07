@@ -33,7 +33,7 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     ownership: account.ownership,
     organization: account.organization,
     priority_tier: account.priorityTier,
-    adp_volume: ''account.vendorInfo,
+    adp_volume: account.vendorInfo,
     relationship_strength: account.relationshipStrength,
     notes: account.notes,
     tags: account.tags,
