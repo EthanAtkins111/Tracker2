@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Account, Contact, InteractionType } from "@/lib/types";
 import { createInteraction, createFollowUp } from "@/lib/supabase-store";
 import { toast } from "sonner";
@@ -39,6 +43,8 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
   const [followUpChoice, setFollowUpChoice] = useState('None');
   const [customDate, setCustomDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const contacts = accountId ? allContacts.filter(c => c.accountId === accountId) : [];
 
@@ -95,18 +101,58 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
           </div>
           <div className="grid gap-1.5">
             <Label>Account</Label>
-            <Select value={accountId} onValueChange={v => { setAccountId(v); setContactId(''); }}>
-              <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-              <SelectContent>{accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Popover open={accountOpen} onOpenChange={setAccountOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={accountOpen} className="w-full justify-between font-normal">
+                  {accountId ? accounts.find(a => a.id === accountId)?.name : "Select account"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search accounts..." />
+                  <CommandList>
+                    <CommandEmpty>No accounts found.</CommandEmpty>
+                    <CommandGroup>
+                      {accounts.map(a => (
+                        <CommandItem key={a.id} value={a.name} onSelect={() => { setAccountId(a.id); setContactId(''); setAccountOpen(false); }}>
+                          <Check className={cn("mr-2 h-4 w-4", accountId === a.id ? "opacity-100" : "opacity-0")} />
+                          <div><span className="font-medium">{a.name}</span>{a.city && <span className="text-muted-foreground text-xs ml-2">{a.city}</span>}</div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           {contacts.length > 0 && (
             <div className="grid gap-1.5">
               <Label>Contact</Label>
-              <Select value={contactId} onValueChange={setContactId}>
-                <SelectTrigger><SelectValue placeholder="Select contact" /></SelectTrigger>
-                <SelectContent>{contacts.map(c => <SelectItem key={c.id} value={c.id}>{c.name} — {c.role}</SelectItem>)}</SelectContent>
-              </Select>
+              <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" role="combobox" aria-expanded={contactOpen} className="w-full justify-between font-normal">
+                    {contactId ? (() => { const c = allContacts.find(c => c.id === contactId); return c ? `${c.name} — ${c.role}` : "Select contact"; })() : "Select contact"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search contacts..." />
+                    <CommandList>
+                      <CommandEmpty>No contacts found.</CommandEmpty>
+                      <CommandGroup>
+                        {contacts.map(c => (
+                          <CommandItem key={c.id} value={`${c.name} ${c.role}`} onSelect={() => { setContactId(c.id); setContactOpen(false); }}>
+                            <Check className={cn("mr-2 h-4 w-4", contactId === c.id ? "opacity-100" : "opacity-0")} />
+                            {c.name} — {c.role}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
           <div className="grid gap-1.5">
