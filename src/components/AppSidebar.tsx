@@ -1,6 +1,7 @@
-import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -25,7 +26,11 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  
+  const { isAdmin } = useAuth();
+
+  const allItems = isAdmin
+    ? [...navItems, { title: "Users", url: "/users", icon: UserCog }]
+    : navItems;
 
   return (
     <Sidebar collapsible="icon">
@@ -47,7 +52,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {allItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink
