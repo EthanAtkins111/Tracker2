@@ -108,7 +108,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
               <Input value={form.organization} onChange={e => update('organization', e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="grid gap-1.5">
               <Label>Priority</Label>
               <Select value={form.priorityTier} onValueChange={v => update('priorityTier', v)}>
@@ -120,7 +120,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
               <Label>Vendor Info</Label>
               <Input value={form.vendorInfo} onChange={e => update('vendorInfo', e.target.value)} placeholder="e.g. Medline, Cardinal Health" />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5 col-span-2 sm:col-span-1">
               <Label>Relationship</Label>
               <Select value={form.relationshipStrength} onValueChange={v => update('relationshipStrength', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>

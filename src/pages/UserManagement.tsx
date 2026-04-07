@@ -52,22 +52,22 @@ export default function UserManagement() {
   const approved = profiles.filter(p => p.approved);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-bold">User Management</h1>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <h1 className="text-xl sm:text-2xl font-bold">User Management</h1>
 
       {pending.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-amber-600">Pending Approval ({pending.length})</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-amber-600">Pending Approval ({pending.length})</h2>
           {pending.map(p => (
-            <Card key={p.id} className="p-4 border-amber-200 bg-amber-50/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-sm">{p.email}</p>
+            <Card key={p.id} className="p-3 sm:p-4 border-amber-200 bg-amber-50/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{p.email}</p>
                   <p className="text-xs text-muted-foreground">
                     Signed up {new Date(p.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Button size="sm" onClick={() => updateProfile(p.id, { approved: true })}>
                     <Check className="mr-1 h-3.5 w-3.5" /> Approve
                   </Button>
@@ -82,20 +82,20 @@ export default function UserManagement() {
       )}
 
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Approved Users ({approved.length})</h2>
+        <h2 className="text-base sm:text-lg font-semibold">Approved Users ({approved.length})</h2>
         {approved.map(p => (
-          <Card key={p.id} className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div>
-                  <p className="font-medium text-sm">{p.email}</p>
+          <Card key={p.id} className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{p.email}</p>
                   <p className="text-xs text-muted-foreground">
                     Since {new Date(p.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                {p.is_admin && <Badge variant="default" className="text-xs">Admin</Badge>}
+                {p.is_admin && <Badge variant="default" className="text-xs shrink-0">Admin</Badge>}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
