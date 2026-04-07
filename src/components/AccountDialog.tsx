@@ -30,7 +30,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     ownership: account?.ownership || '',
     organization: account?.organization || '',
     priorityTier: (account?.priorityTier || 'Medium') as PriorityTier,
-    adpVolume: account?.adpVolume?.toString() || '0',
+    vendorInfo: account?.vendorInfo || '',
     relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
@@ -44,7 +44,6 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
       const data = {
         ...form,
         bedCount: parseInt(form.bedCount) || 0,
-        adpVolume: parseInt(form.adpVolume) || 0,
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       };
       if (account) {
@@ -118,8 +117,8 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label>ADP Volume</Label>
-              <Input type="number" value={form.adpVolume} onChange={e => update('adpVolume', e.target.value)} />
+              <Label>Vendor Info</Label>
+              <Input value={form.vendorInfo} onChange={e => update('vendorInfo', e.target.value)} placeholder="e.g. Medline, Cardinal Health" />
             </div>
             <div className="grid gap-1.5">
               <Label>Relationship</Label>
