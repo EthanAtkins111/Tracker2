@@ -77,7 +77,7 @@ export default function AccountDetail() {
               <div><span className="text-muted-foreground block text-xs">Bed Count</span><span className="flex items-center gap-1"><Bed className="h-3 w-3" />{account.bedCount}</span></div>
               <div><span className="text-muted-foreground block text-xs">Ownership</span>{account.ownership}</div>
               <div><span className="text-muted-foreground block text-xs">Organization</span>{account.organization}</div>
-              <div><span className="text-muted-foreground block text-xs">ADP Volume</span>{account.adpVolume}</div>
+              <div><span className="text-muted-foreground block text-xs">Vendor Info</span>{account.vendorInfo || '—'}</div>
               <div><span className="text-muted-foreground block text-xs">Priority</span><PriorityBadge tier={account.priorityTier} /></div>
               <div><span className="text-muted-foreground block text-xs">Relationship</span><StrengthBadge strength={account.relationshipStrength} /></div>
               <div><span className="text-muted-foreground block text-xs">Last Visit</span><DaysSinceBadge days={daysSince} /></div>

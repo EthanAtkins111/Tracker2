@@ -33,11 +33,11 @@ export default function Opportunities() {
 
   const highWeakAccounts = accounts.filter(a => a.priorityTier === 'High' && (a.relationshipStrength === 'Weak' || a.relationshipStrength === 'New'));
   const largeBedStale = accounts.filter(a => { const days = getDaysSince(a.id); return a.bedCount >= 100 && (days === null || days > 30); }).sort((a, b) => b.bedCount - a.bedCount);
-  const topOpps = accounts.filter(a => { const days = getDaysSince(a.id); return a.adpVolume >= 20 && (a.relationshipStrength === 'Weak' || a.relationshipStrength === 'New') && (days === null || days > 14); }).sort((a, b) => b.adpVolume - a.adpVolume);
+  const topOpps = accounts.filter(a => { const days = getDaysSince(a.id); return (a.relationshipStrength === 'Weak' || a.relationshipStrength === 'New') && (days === null || days > 14); }).sort((a, b) => b.bedCount - a.bedCount);
 
   const AccountRow = ({ a }: { a: typeof accounts[0] }) => (
     <div className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${a.id}`)}>
-      <div><p className="font-medium text-sm">{a.name}</p><p className="text-xs text-muted-foreground">{a.city} · {a.accountType} · ADP: {a.adpVolume}</p></div>
+      <div><p className="font-medium text-sm">{a.name}</p><p className="text-xs text-muted-foreground">{a.city} · {a.accountType}{a.vendorInfo ? ` · ${a.vendorInfo}` : ''}</p></div>
       <div className="flex items-center gap-2">
         {a.bedCount > 0 && <span className="text-xs text-muted-foreground flex items-center gap-1"><Bed className="h-3 w-3" />{a.bedCount}</span>}
         <PriorityBadge tier={a.priorityTier} />
