@@ -1,9 +1,10 @@
 -- =============================================
--- USER APPROVAL SYSTEM MIGRATION
+-- USER APPROVAL SYSTEM - FIXED MIGRATION
 -- Run this in your Supabase SQL Editor
+-- Handles "already exists" gracefully
 -- =============================================
 
--- 1. Create profiles table with approved flag
+-- 1. Create profiles table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email text,
@@ -14,173 +15,143 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 2. RLS: Users can read their own profile; admins can read all
-CREATE POLICY "Users can read own profile"
-  ON public.profiles FOR SELECT TO authenticated
-  USING (id = auth.uid());
+-- 2. Drop ALL existing policies on profiles to start fresh
+DO $$ 
+DECLARE
+  pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'profiles' AND schemaname = 'public'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.profiles', pol.policyname);
+  END LOOP;
+END $$;
 
-CREATE POLICY "Admins can read all profiles"
-  ON public.profiles FOR SELECT TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
-  );
+-- 3. Security definer functions (bypass RLS, no recursion)
+CREATE OR REPLACE FUNCTION public.is_approved(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT COALESCE((SELECT approved FROM public.profiles WHERE id = _user_id), false) $$;
 
-CREATE POLICY "Admins can update profiles"
+CREATE OR REPLACE FUNCTION public.is_admin(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$ SELECT COALESCE((SELECT is_admin FROM public.profiles WHERE id = _user_id), false) $$;
+
+-- 4. Simple RLS on profiles - NO recursion
+CREATE POLICY "profiles_select_own"
+  ON public.profiles FOR SELECT TO authenticated
+  USING (id = auth.uid() OR public.is_admin(auth.uid()));
+
+CREATE POLICY "profiles_update_admin"
   ON public.profiles FOR UPDATE TO authenticated
-  USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
-  );
+  USING (public.is_admin(auth.uid()));
 
--- 3. Auto-create profile on signup
+-- 5. Auto-create profile on signup trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  user_count int;
 BEGIN
+  SELECT COUNT(*) INTO user_count FROM public.profiles;
   INSERT INTO public.profiles (id, email, approved, is_admin)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    -- First user is auto-approved and admin
-    (SELECT COUNT(*) = 0 FROM public.profiles),
-    (SELECT COUNT(*) = 0 FROM public.profiles)
-  );
+  VALUES (NEW.id, NEW.email, user_count = 0, user_count = 0)
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$;
 
--- Drop trigger if exists, then create
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 4. Security definer function to check approval (avoids RLS recursion)
-CREATE OR REPLACE FUNCTION public.is_approved(_user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = _user_id AND approved = true
-  )
-$$;
+-- 6. Update data table RLS policies to require approval
+-- ACCOUNTS
+DO $$ 
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'accounts' AND schemaname = 'public'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.accounts', pol.policyname);
+  END LOOP;
+END $$;
 
-CREATE OR REPLACE FUNCTION public.is_admin(_user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = _user_id AND is_admin = true
-  )
-$$;
-
--- 5. Update RLS on data tables to require approval
--- Accounts
-DROP POLICY IF EXISTS "Users can view own accounts" ON public.accounts;
-DROP POLICY IF EXISTS "Users can insert own accounts" ON public.accounts;
-DROP POLICY IF EXISTS "Users can update own accounts" ON public.accounts;
-DROP POLICY IF EXISTS "Users can delete own accounts" ON public.accounts;
-
-CREATE POLICY "Approved users can view own accounts"
-  ON public.accounts FOR SELECT TO authenticated
+CREATE POLICY "accounts_select" ON public.accounts FOR SELECT TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can insert own accounts"
-  ON public.accounts FOR INSERT TO authenticated
+CREATE POLICY "accounts_insert" ON public.accounts FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can update own accounts"
-  ON public.accounts FOR UPDATE TO authenticated
+CREATE POLICY "accounts_update" ON public.accounts FOR UPDATE TO authenticated
+  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
+CREATE POLICY "accounts_delete" ON public.accounts FOR DELETE TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
 
-CREATE POLICY "Approved users can delete own accounts"
-  ON public.accounts FOR DELETE TO authenticated
+-- CONTACTS
+DO $$ 
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'contacts' AND schemaname = 'public'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.contacts', pol.policyname);
+  END LOOP;
+END $$;
+
+CREATE POLICY "contacts_select" ON public.contacts FOR SELECT TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
--- Contacts
-DROP POLICY IF EXISTS "Users can view own contacts" ON public.contacts;
-DROP POLICY IF EXISTS "Users can insert own contacts" ON public.contacts;
-DROP POLICY IF EXISTS "Users can update own contacts" ON public.contacts;
-DROP POLICY IF EXISTS "Users can delete own contacts" ON public.contacts;
-
-CREATE POLICY "Approved users can view own contacts"
-  ON public.contacts FOR SELECT TO authenticated
-  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can insert own contacts"
-  ON public.contacts FOR INSERT TO authenticated
+CREATE POLICY "contacts_insert" ON public.contacts FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can update own contacts"
-  ON public.contacts FOR UPDATE TO authenticated
+CREATE POLICY "contacts_update" ON public.contacts FOR UPDATE TO authenticated
+  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
+CREATE POLICY "contacts_delete" ON public.contacts FOR DELETE TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
 
-CREATE POLICY "Approved users can delete own contacts"
-  ON public.contacts FOR DELETE TO authenticated
+-- INTERACTIONS
+DO $$ 
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'interactions' AND schemaname = 'public'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.interactions', pol.policyname);
+  END LOOP;
+END $$;
+
+CREATE POLICY "interactions_select" ON public.interactions FOR SELECT TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
--- Interactions
-DROP POLICY IF EXISTS "Users can view own interactions" ON public.interactions;
-DROP POLICY IF EXISTS "Users can insert own interactions" ON public.interactions;
-DROP POLICY IF EXISTS "Users can update own interactions" ON public.interactions;
-DROP POLICY IF EXISTS "Users can delete own interactions" ON public.interactions;
-
-CREATE POLICY "Approved users can view own interactions"
-  ON public.interactions FOR SELECT TO authenticated
-  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can insert own interactions"
-  ON public.interactions FOR INSERT TO authenticated
+CREATE POLICY "interactions_insert" ON public.interactions FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can update own interactions"
-  ON public.interactions FOR UPDATE TO authenticated
+CREATE POLICY "interactions_update" ON public.interactions FOR UPDATE TO authenticated
+  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
+CREATE POLICY "interactions_delete" ON public.interactions FOR DELETE TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
 
-CREATE POLICY "Approved users can delete own interactions"
-  ON public.interactions FOR DELETE TO authenticated
+-- FOLLOW_UPS
+DO $$ 
+DECLARE pol RECORD;
+BEGIN
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'follow_ups' AND schemaname = 'public'
+  LOOP EXECUTE format('DROP POLICY IF EXISTS %I ON public.follow_ups', pol.policyname);
+  END LOOP;
+END $$;
+
+CREATE POLICY "follow_ups_select" ON public.follow_ups FOR SELECT TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
--- Follow-ups
-DROP POLICY IF EXISTS "Users can view own follow_ups" ON public.follow_ups;
-DROP POLICY IF EXISTS "Users can insert own follow_ups" ON public.follow_ups;
-DROP POLICY IF EXISTS "Users can update own follow_ups" ON public.follow_ups;
-DROP POLICY IF EXISTS "Users can delete own follow_ups" ON public.follow_ups;
-
-CREATE POLICY "Approved users can view own follow_ups"
-  ON public.follow_ups FOR SELECT TO authenticated
-  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can insert own follow_ups"
-  ON public.follow_ups FOR INSERT TO authenticated
+CREATE POLICY "follow_ups_insert" ON public.follow_ups FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
-CREATE POLICY "Approved users can update own follow_ups"
-  ON public.follow_ups FOR UPDATE TO authenticated
+CREATE POLICY "follow_ups_update" ON public.follow_ups FOR UPDATE TO authenticated
+  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
+CREATE POLICY "follow_ups_delete" ON public.follow_ups FOR DELETE TO authenticated
   USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
 
-CREATE POLICY "Approved users can delete own follow_ups"
-  ON public.follow_ups FOR DELETE TO authenticated
-  USING (user_id = auth.uid() AND public.is_approved(auth.uid()));
-
--- 6. Create profile for existing users (if any)
+-- 7. Create profiles for ALL existing users
+-- First user = approved admin, rest = approved non-admin
 INSERT INTO public.profiles (id, email, approved, is_admin)
 SELECT id, email, true, true FROM auth.users
 WHERE id NOT IN (SELECT id FROM public.profiles)
 ORDER BY created_at ASC
-LIMIT 1;
+LIMIT 1
+ON CONFLICT (id) DO UPDATE SET approved = true, is_admin = true;
 
--- Add remaining existing users as approved (non-admin)
 INSERT INTO public.profiles (id, email, approved, is_admin)
 SELECT id, email, true, false FROM auth.users
-WHERE id NOT IN (SELECT id FROM public.profiles);
+WHERE id NOT IN (SELECT id FROM public.profiles)
+ON CONFLICT (id) DO UPDATE SET approved = true;
