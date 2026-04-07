@@ -1,18 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Account, Contact, Interaction, FollowUp, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus } from './types';
 
-// Helper to get current user's store id
-async function getStoreId(): Promise<string> {
+// Helper to get current user id
+async function getUserId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
-  const { data } = await supabase
-    .from('store_members')
-    .select('store_id')
-    .eq('user_id', user.id)
-    .limit(1)
-    .single();
-  if (!data) throw new Error('No store membership found');
-  return data.store_id as string;
+  return user.id;
 }
 
 // ===== ACCOUNTS =====
@@ -29,9 +22,9 @@ export async function fetchAccount(id: string): Promise<Account | null> {
 }
 
 export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account> {
-  const storeId = await getStoreId();
+  const userId = await getUserId();
   const { data, error } = await supabase.from('accounts').insert({
-    store_id: storeId,
+    user_id: userId,
     name: account.name,
     address: account.address,
     city: account.city,
@@ -113,9 +106,9 @@ export async function fetchContact(id: string): Promise<Contact | null> {
 }
 
 export async function createContact(contact: Omit<Contact, 'id'>): Promise<Contact> {
-  const storeId = await getStoreId();
+  const userId = await getUserId();
   const { data, error } = await supabase.from('contacts').insert({
-    store_id: storeId,
+    user_id: userId,
     account_id: contact.accountId,
     name: contact.name,
     role: contact.role,
@@ -178,9 +171,9 @@ export async function fetchLastInteraction(accountId: string): Promise<Interacti
 }
 
 export async function createInteraction(interaction: Omit<Interaction, 'id'>): Promise<Interaction> {
-  const storeId = await getStoreId();
+  const userId = await getUserId();
   const { data, error } = await supabase.from('interactions').insert({
-    store_id: storeId,
+    user_id: userId,
     account_id: interaction.accountId,
     contact_id: interaction.contactId || null,
     date: interaction.date,
@@ -218,9 +211,9 @@ export async function fetchFollowUpsByAccount(accountId: string): Promise<Follow
 }
 
 export async function createFollowUp(followUp: Omit<FollowUp, 'id'>): Promise<FollowUp> {
-  const storeId = await getStoreId();
+  const userId = await getUserId();
   const { data, error } = await supabase.from('follow_ups').insert({
-    store_id: storeId,
+    user_id: userId,
     account_id: followUp.accountId,
     contact_id: followUp.contactId || null,
     due_date: followUp.dueDate,
@@ -264,23 +257,15 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
 // ===== SEED REGION DATA =====
 export async function seedRegionData(force = false): Promise<void> {
   if (!force) {
-    // Check if user already has accounts
     const { count, error: countErr } = await supabase.from('accounts').select('*', { count: 'exact', head: true });
     if (countErr) { console.error('Seed count check failed:', countErr); return; }
     if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
   }
 
-  let storeId: string;
-  try {
-    storeId = await getStoreId();
-  } catch (e) {
-    console.error('Seed failed – no store membership:', e);
-    return;
-  }
-  console.log('Seeding region data for store:', storeId);
+  const userId = await getUserId();
+  console.log('Seeding region data for user:', userId);
 
   const accounts = [
-    // LTC
     { name: 'Linhaven', address: '403 Ontario St', city: 'St. Catharines', account_type: 'LTC', bed_count: 248, ownership: 'Municipal', organization: 'Niagara Region', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Largest home, top priority', tags: [] as string[] },
     { name: 'Gilmore Lodge', address: '60 King St', city: 'Fort Erie', account_type: 'LTC', bed_count: 160, ownership: 'Municipal', organization: 'Niagara Region', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Strong municipal influence', tags: [] as string[] },
     { name: 'Northland Pointe', address: '2 Fielden Ave', city: 'Fort Erie', account_type: 'LTC', bed_count: 160, ownership: 'Municipal', organization: 'Niagara Region', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Newer build', tags: [] as string[] },
@@ -310,7 +295,6 @@ export async function seedRegionData(force = false): Promise<void> {
     { name: 'Deer Park Villa', address: '150 Central Ave', city: 'Grimsby', account_type: 'LTC', bed_count: 40, ownership: 'Municipal', organization: 'Niagara Region', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'Easy access', tags: [] as string[] },
     { name: 'Kilean Lodge Long-Term Care Home', address: '83 Main St E', city: 'Grimsby', account_type: 'LTC', bed_count: 50, ownership: 'Private', organization: 'Private', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'Quick wins', tags: [] as string[] },
     { name: 'Niagara Health Welland ECU', address: '65 Third St', city: 'Welland', account_type: 'LTC', bed_count: 75, ownership: 'Hospital', organization: 'Niagara Health', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'ECU unit', tags: [] as string[] },
-    // Retirement
     { name: "Angel's Retirement Home", address: '417 Queenston St', city: 'St. Catharines', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Private', priority_tier: 'Low', adp_volume: 30, relationship_strength: 'New', notes: 'Small home, close to downtown', tags: [] as string[] },
     { name: 'Aspira Heatherwood Retirement Living', address: '113 Scott St', city: 'St. Catharines', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Aspira', priority_tier: 'Medium', adp_volume: 30, relationship_strength: 'New', notes: 'Part of Aspira portfolio', tags: [] as string[] },
     { name: 'Aspira Lincoln Park Retirement Living', address: '265 Main St E', city: 'Grimsby', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Aspira', priority_tier: 'Medium', adp_volume: 30, relationship_strength: 'New', notes: 'Grimsby market', tags: [] as string[] },
@@ -344,7 +328,6 @@ export async function seedRegionData(force = false): Promise<void> {
     { name: 'Villa De Rose Retirement Residence', address: '370 Hellems Ave', city: 'Welland', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Private', priority_tier: 'Low', adp_volume: 30, relationship_strength: 'New', notes: 'Smaller residence', tags: [] as string[] },
     { name: 'Willoughby Manor Retirement Residence', address: '3584 Bridgewater St', city: 'Niagara Falls', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Private', priority_tier: 'Low', adp_volume: 30, relationship_strength: 'New', notes: 'Falls area', tags: [] as string[] },
     { name: 'The Willows MyLife Retirement Living', address: '1485 Garrison Rd', city: 'Fort Erie', account_type: 'Retirement', bed_count: 0, ownership: 'Private', organization: 'Private', priority_tier: 'Low', adp_volume: 30, relationship_strength: 'New', notes: 'Fort Erie retirement option', tags: [] as string[] },
-    // Group Homes
     { name: 'Bethesda Services', address: 'Multiple sites', city: 'Niagara Region', account_type: 'Group Home', bed_count: 200, ownership: 'Not-for-profit', organization: 'Bethesda', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Large multi-home operator, 24/7 care', tags: [] as string[] },
     { name: 'Inclusion West Niagara', address: 'Multiple sites', city: 'Grimsby', account_type: 'Group Home', bed_count: 80, ownership: 'Not-for-profit', organization: 'IWN', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Key Grimsby target', tags: [] as string[] },
     { name: 'Community Living St. Catharines', address: 'Multiple sites', city: 'St. Catharines', account_type: 'Group Home', bed_count: 150, ownership: 'Not-for-profit', organization: 'Community Living', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Large network', tags: [] as string[] },
@@ -359,14 +342,12 @@ export async function seedRegionData(force = false): Promise<void> {
     { name: 'Bethlehem Housing and Support Services', address: 'Multiple sites', city: 'Niagara Region', account_type: 'Group Home', bed_count: 100, ownership: 'Not-for-profit', organization: 'Bethlehem', priority_tier: 'Medium', adp_volume: 30, relationship_strength: 'New', notes: 'Transitional housing', tags: [] as string[] },
     { name: 'Nest Niagara', address: 'Multiple sites', city: 'Niagara Region', account_type: 'Group Home', bed_count: 50, ownership: 'Not-for-profit', organization: 'Nest', priority_tier: 'Low', adp_volume: 30, relationship_strength: 'New', notes: 'Aging-in-place', tags: [] as string[] },
     { name: 'Niagara Peninsula Homes', address: 'Multiple sites', city: 'Niagara Region', account_type: 'Group Home', bed_count: 1800, ownership: 'Municipal/Non-profit', organization: 'NPH', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'Indirect influence', tags: [] as string[] },
-    // Hospitals
     { name: 'Niagara Falls Hospital', address: '5546 Portage Rd', city: 'Niagara Falls', account_type: 'Hospital', bed_count: 225, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Stroke, rehab, discharge pipeline', tags: [] as string[] },
     { name: 'Marotta Family Hospital', address: '1200 Fourth Ave', city: 'St. Catharines', account_type: 'Hospital', bed_count: 475, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Largest acute site, high OT volume', tags: [] as string[] },
     { name: 'Welland Hospital', address: '65 Third St', city: 'Welland', account_type: 'Hospital', bed_count: 88, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'Medium', adp_volume: 30, relationship_strength: 'New', notes: 'Transitional + redevelopment', tags: [] as string[] },
     { name: 'Port Colborne Urgent Care Centre', address: '260 Sugarloaf St', city: 'Port Colborne', account_type: 'Hospital', bed_count: 25, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'Limited inpatient', tags: [] as string[] },
     { name: 'Fort Erie Urgent Care Centre', address: '1485 Garrison Rd', city: 'Fort Erie', account_type: 'Hospital', bed_count: 25, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'Low', adp_volume: 10, relationship_strength: 'New', notes: 'Community access point', tags: [] as string[] },
     { name: 'West Lincoln Memorial Hospital', address: '169 Main St E', city: 'Grimsby', account_type: 'Hospital', bed_count: 70, ownership: 'Public', organization: 'Hamilton Health Sciences', priority_tier: 'High', adp_volume: 30, relationship_strength: 'New', notes: 'Key Grimsby site', tags: [] as string[] },
-    // Clinics
     { name: 'Niagara Health – Outpatient Rehab', address: '1200 Fourth Ave', city: 'St. Catharines', account_type: 'Clinic', bed_count: 0, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Direct OT/PT referral pipeline', tags: [] as string[] },
     { name: 'Niagara Falls Hospital Rehab Services', address: '5546 Portage Rd', city: 'Niagara Falls', account_type: 'Clinic', bed_count: 0, ownership: 'Public', organization: 'Niagara Health', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Stroke + mobility cases', tags: [] as string[] },
     { name: 'Hotel Dieu Shaver Health and Rehabilitation Centre', address: '541 Glenridge Ave', city: 'St. Catharines', account_type: 'Clinic', bed_count: 0, ownership: 'Not-for-profit', organization: 'Hotel Dieu Shaver', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'HUGE rehab + wheelchair referrals', tags: [] as string[] },
@@ -385,9 +366,8 @@ export async function seedRegionData(force = false): Promise<void> {
     { name: 'CarePartners Rehabilitation', address: 'Mobile', city: 'Niagara Region', account_type: 'Clinic', bed_count: 0, ownership: 'Private', organization: 'CarePartners', priority_tier: 'High', adp_volume: 80, relationship_strength: 'New', notes: 'Home-based ADP pipeline', tags: [] as string[] },
   ];
 
-  // Insert in batches of 20
   for (let i = 0; i < accounts.length; i += 20) {
-    const batch = accounts.slice(i, i + 20).map(a => ({ ...a, store_id: storeId }));
+    const batch = accounts.slice(i, i + 20).map(a => ({ ...a, user_id: userId }));
     const { error } = await supabase.from('accounts').insert(batch);
     if (error) throw error;
   }
