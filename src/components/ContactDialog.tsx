@@ -12,8 +12,7 @@ import { createContact, editContact } from "@/lib/supabase-store";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const roles = ['OT', 'PT', 'Nurse Manager', 'Director of Care', 'General Manager', 'Physician', 'Physiatrist', 'Administrator', 'Other'];
+import { useRoles } from "@/hooks/use-roles";
 
 interface Props {
   open: boolean;
@@ -25,6 +24,7 @@ interface Props {
 }
 
 export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, accounts, onSaved }: Props) {
+  const { allRoles, addRole } = useRoles();
   const [form, setForm] = useState({
     name: contact?.name || '',
     role: contact?.role || '',
@@ -35,6 +35,7 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, a
   });
   const [saving, setSaving] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
 
   const selectedAccountName = useMemo(
     () => accounts.find(a => a.id === form.accountId)?.name || '',
@@ -77,10 +78,59 @@ export function ContactDialog({ open, onOpenChange, contact, defaultAccountId, a
           </div>
           <div className="grid gap-1.5">
             <Label>Role</Label>
-            <Select value={form.role} onValueChange={v => update('role', v)}>
-              <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
-              <SelectContent>{roles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-            </Select>
+            <Popover open={roleOpen} onOpenChange={setRoleOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={roleOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {form.role || "Select or type role..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search or type new role..." />
+                  <CommandList>
+                    <CommandEmpty>
+                      <button
+                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent rounded cursor-pointer"
+                        onClick={() => {
+                          const input = document.querySelector<HTMLInputElement>('[cmdk-input]');
+                          const val = input?.value?.trim();
+                          if (val) {
+                            addRole(val);
+                            update('role', val);
+                            setRoleOpen(false);
+                          }
+                        }}
+                      >
+                        Add as new role
+                      </button>
+                    </CommandEmpty>
+                    <CommandGroup className="max-h-[200px] overflow-y-auto">
+                      {allRoles.map(r => (
+                        <CommandItem
+                          key={r}
+                          value={r}
+                          onSelect={() => {
+                            update('role', r);
+                            setRoleOpen(false);
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.role === r ? "opacity-100" : "opacity-0")} />
+                          {r}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="grid gap-1.5">
