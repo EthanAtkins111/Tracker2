@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { ContactDialog } from "@/components/ContactDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { removeContact } from "@/lib/supabase-store";
-import { Plus, Search, Phone, Mail, Trash2, Edit, Building2 } from "lucide-react";
+import { Plus, Search, Phone, Mail, Trash2, Edit, Building2, X } from "lucide-react";
+import { editContact } from "@/lib/supabase-store";
 
 export default function Contacts() {
   const { accounts, contacts, loading, refresh, getAccountName } = useCrmData();
@@ -40,7 +41,22 @@ export default function Contacts() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-semibold text-sm truncate">{c.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{c.role}</p>
+                {c.role && (
+                  <span className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <span className="truncate">{c.role}</span>
+                    <button
+                      className="shrink-0 hover:text-destructive transition-colors"
+                      title="Remove role"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await editContact(c.id, { role: '' } as any);
+                        refresh();
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
               </div>
               <div className="flex gap-0.5 shrink-0">
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(c.id); setShowAdd(true); }}>
