@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 const STORAGE_KEY = "crm-custom-roles";
-const DEFAULT_ROLES = ['OT', 'PT', 'Nurse Manager', 'Director of Care', 'General Manager', 'Physician', 'Physiatrist', 'Administrator', 'Other'];
+const DEFAULT_ROLES: string[] = [];
 
 function loadCustomRoles(): string[] {
   try {
@@ -19,7 +19,7 @@ function saveCustomRoles(roles: string[]) {
 export function useRoles() {
   const [customRoles, setCustomRoles] = useState<string[]>(loadCustomRoles);
 
-  const allRoles = [...DEFAULT_ROLES.filter(r => r !== 'Other'), ...customRoles, 'Other'];
+  const allRoles = [...DEFAULT_ROLES, ...customRoles];
 
   const addRole = useCallback((role: string) => {
     const trimmed = role.trim();
@@ -30,8 +30,9 @@ export function useRoles() {
   }, [customRoles]);
 
   const removeRole = useCallback((role: string) => {
-    if (DEFAULT_ROLES.includes(role)) return; // can't remove defaults
     const updated = customRoles.filter(r => r !== role);
+    setCustomRoles(updated);
+    saveCustomRoles(updated);
     setCustomRoles(updated);
     saveCustomRoles(updated);
   }, [customRoles]);
