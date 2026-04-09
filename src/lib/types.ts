@@ -18,6 +18,7 @@ export interface Account {
   relationshipStrength: RelationshipStrength;
   notes: string;
   tags: string[];
+  accountValue: number;
   createdAt: string;
 }
 
