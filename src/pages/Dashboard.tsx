@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,11 +7,10 @@ import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
-import { fetchLastInteraction, seedRegionData, deduplicateAccounts } from "@/lib/supabase-store";
+import { fetchInteractions, fetchLastInteraction, seedRegionData } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Phone, Building2, CalendarClock, AlertTriangle, Clock, LogOut, Database } from "lucide-react";
+import { Plus, Phone, Building2, Users, MapPin, CalendarClock, AlertTriangle, Clock, LogOut, Database, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { useEffect } from "react";
 import { Interaction } from "@/lib/types";
 
 export default function Dashboard() {
@@ -22,16 +21,21 @@ export default function Dashboard() {
   const [showInteraction, setShowInteraction] = useState(false);
   const navigate = useNavigate();
 
+  const [recentInteractions, setRecentInteractions] = useState<Interaction[]>([]);
   const [lastInteractions, setLastInteractions] = useState<Record<string, Interaction | null>>({});
 
   useEffect(() => {
     if (accounts.length > 0) {
-      Promise.all(accounts.map(a => fetchLastInteraction(a.id).then(i => [a.id, i] as const)))
-        .then(results => {
-          const map: Record<string, Interaction | null> = {};
-          results.forEach(([id, i]) => { map[id] = i; });
-          setLastInteractions(map);
-        });
+      // Fetch recent interactions (last 10) and last interaction per account in parallel
+      Promise.all([
+        fetchInteractions().then(all => all.slice(0, 10)),
+        Promise.all(accounts.map(a => fetchLastInteraction(a.id).then(i => [a.id, i] as const)))
+      ]).then(([recent, results]) => {
+        setRecentInteractions(recent);
+        const map: Record<string, Interaction | null> = {};
+        results.forEach(([id, i]) => { map[id] = i; });
+        setLastInteractions(map);
+      });
     }
   }, [accounts]);
 
@@ -49,30 +53,26 @@ export default function Dashboard() {
     return Math.floor((Date.now() - new Date(last.date).getTime()) / 86400000);
   };
 
-  const highPriorityNeedingAttention = accounts.filter(a => {
-    if (a.priorityTier !== 'High') return false;
-    const days = getDaysSince(a.id);
-    return days === null || days > 14;
-  });
+  // Suggested visits: high priority not visited in 14+ days, then any not visited in 30+ days
+  const suggestedVisits = accounts
+    .map(a => ({ ...a, daysSince: getDaysSince(a.id) }))
+    .filter(a => {
+      if (a.priorityTier === 'High') return a.daysSince === null || a.daysSince > 14;
+      return a.daysSince === null || a.daysSince > 30;
+    })
+    .sort((a, b) => {
+      // High priority first, then by days since (longest first)
+      if (a.priorityTier === 'High' && b.priorityTier !== 'High') return -1;
+      if (b.priorityTier === 'High' && a.priorityTier !== 'High') return 1;
+      return (b.daysSince ?? 999) - (a.daysSince ?? 999);
+    })
+    .slice(0, 8);
 
-  const notVisited30Days = accounts.filter(a => {
-    const days = getDaysSince(a.id);
-    return days === null || days > 30;
-  });
-
-  interface FollowUpItem { accountId: string; contactId: string; dueDate: string; }
-  const FollowUpRow = ({ item }: { item: FollowUpItem }) => (
-    <div className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${item.accountId}`)}>
-      <div className="min-w-0">
-        <p className="font-medium text-sm truncate">{getAccountName(item.accountId)}</p>
-        <p className="text-xs text-muted-foreground truncate">{getAccountCity(item.accountId)} · {getContactName(item.contactId)}</p>
-      </div>
-      <div className="flex items-center gap-1.5 ml-2 shrink-0">
-        <PriorityBadge tier={getAccountPriority(item.accountId)} />
-        <DaysSinceBadge days={getDaysSince(item.accountId)} />
-      </div>
-    </div>
-  );
+  // Stats
+  const totalAccounts = accounts.length;
+  const totalContacts = contacts.length;
+  const highPriorityCount = accounts.filter(a => a.priorityTier === 'High').length;
+  const overdueCount = dueToday.length;
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
@@ -99,7 +99,6 @@ export default function Dashboard() {
               toast.success('Sample data loaded!');
             } catch (e: any) {
               toast.error('Failed: ' + (e?.message || 'Unknown error'));
-              console.error('Seed error:', e);
             }
           }}>
             <Database className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Load</span> Data
@@ -110,58 +109,137 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/accounts')}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Building2 className="h-3.5 w-3.5" /> Accounts
+            </div>
+            <p className="text-2xl font-bold">{totalAccounts}</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/contacts')}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Users className="h-3.5 w-3.5" /> Contacts
+            </div>
+            <p className="text-2xl font-bold">{totalContacts}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <TrendingUp className="h-3.5 w-3.5" /> High Priority
+            </div>
+            <p className="text-2xl font-bold">{highPriorityCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Overdue
+            </div>
+            <p className="text-2xl font-bold text-destructive">{overdueCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Visits */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive shrink-0" /> Follow-ups Due Today ({dueToday.length})
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" /> Recent Visits
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
+            {recentInteractions.length === 0 && <p className="text-sm text-muted-foreground py-2">No interactions logged yet</p>}
+            {recentInteractions.map((interaction) => (
+              <div
+                key={interaction.id}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/accounts/${interaction.accountId}`)}
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{getAccountName(interaction.accountId)}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {interaction.type} · {getContactName(interaction.contactId)} · {new Date(interaction.date).toLocaleDateString()}
+                  </p>
+                </div>
+                <PriorityBadge tier={getAccountPriority(interaction.accountId)} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Suggested Visits */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary shrink-0" /> Suggested Visits
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 max-h-80 overflow-y-auto">
+            {suggestedVisits.length === 0 && <p className="text-sm text-muted-foreground py-2">All accounts are up to date! 🎉</p>}
+            {suggestedVisits.map(a => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/accounts/${a.id}`)}
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{a.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{a.city} · {a.bedCount} beds</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <PriorityBadge tier={a.priorityTier} />
+                  <DaysSinceBadge days={a.daysSince} />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Follow-ups Due */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0" /> Follow-ups Due ({dueToday.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             {dueToday.length === 0 && <p className="text-sm text-muted-foreground py-2">All caught up! 🎉</p>}
-            {dueToday.map((f, i) => <FollowUpRow key={i} item={f} />)}
+            {dueToday.map((f, i) => (
+              <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${f.accountId}`)}>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{getAccountName(f.accountId)}</p>
+                  <p className="text-xs text-muted-foreground truncate">{getAccountCity(f.accountId)} · {getContactName(f.contactId)}</p>
+                </div>
+                <PriorityBadge tier={getAccountPriority(f.accountId)} />
+              </div>
+            ))}
           </CardContent>
         </Card>
+
+        {/* Upcoming Follow-ups */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-info shrink-0" /> Upcoming 7 Days ({upcoming.length})
+              <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" /> Upcoming 7 Days ({upcoming.length})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             {upcoming.length === 0 && <p className="text-sm text-muted-foreground py-2">No upcoming follow-ups</p>}
-            {upcoming.map((f, i) => <FollowUpRow key={i} item={f} />)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning shrink-0" /> High Priority ({highPriorityNeedingAttention.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {highPriorityNeedingAttention.map(a => (
-              <div key={a.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${a.id}`)}>
-                <div className="min-w-0"><p className="font-medium text-sm truncate">{a.name}</p><p className="text-xs text-muted-foreground">{a.city}</p></div>
-                <DaysSinceBadge days={getDaysSince(a.id)} />
+            {upcoming.map((f, i) => (
+              <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${f.accountId}`)}>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{getAccountName(f.accountId)}</p>
+                  <p className="text-xs text-muted-foreground truncate">{getAccountCity(f.accountId)} · {getContactName(f.contactId)} · Due {new Date(f.dueDate).toLocaleDateString()}</p>
+                </div>
+                <PriorityBadge tier={getAccountPriority(f.accountId)} />
               </div>
             ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground shrink-0" /> Not Visited 30+ Days ({notVisited30Days.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 max-h-64 overflow-y-auto">
-            {notVisited30Days.slice(0, 10).map(a => (
-              <div key={a.id} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${a.id}`)}>
-                <div className="min-w-0"><p className="font-medium text-sm truncate">{a.name}</p><p className="text-xs text-muted-foreground truncate">{a.city} · {a.bedCount} beds</p></div>
-                <div className="flex items-center gap-1.5 shrink-0"><PriorityBadge tier={a.priorityTier} /><DaysSinceBadge days={getDaysSince(a.id)} /></div>
-              </div>
-            ))}
-            {notVisited30Days.length > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{notVisited30Days.length - 10} more</p>}
           </CardContent>
         </Card>
       </div>
