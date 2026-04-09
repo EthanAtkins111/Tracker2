@@ -34,6 +34,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
+    accountValue: account?.accountValue?.toString() || '0',
   });
   const [saving, setSaving] = useState(false);
 
@@ -44,6 +45,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
       const data = {
         ...form,
         bedCount: parseInt(form.bedCount) || 0,
+        accountValue: parseFloat(form.accountValue) || 0,
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       };
       if (account) {
@@ -99,6 +101,10 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Account Value ($)</Label>
+              <Input type="number" value={form.accountValue} onChange={e => update('accountValue', e.target.value)} placeholder="0.00" />
+            </div>
             <div className="grid gap-1.5">
               <Label>Ownership</Label>
               <Input value={form.ownership} onChange={e => update('ownership', e.target.value)} />

@@ -37,6 +37,7 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     relationship_strength: account.relationshipStrength,
     notes: account.notes,
     tags: account.tags,
+    account_value: account.accountValue || 0,
   }).select().single();
   if (error) throw error;
   return mapAccount(data);
@@ -56,6 +57,7 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
   if (updates.relationshipStrength !== undefined) payload.relationship_strength = updates.relationshipStrength;
   if (updates.notes !== undefined) payload.notes = updates.notes;
   if (updates.tags !== undefined) payload.tags = updates.tags;
+  if (updates.accountValue !== undefined) payload.account_value = updates.accountValue;
 
   const { data, error } = await supabase.from('accounts').update(payload).eq('id', id).select().single();
   if (error) throw error;
@@ -82,6 +84,7 @@ function mapAccount(row: Record<string, unknown>): Account {
     relationshipStrength: row.relationship_strength as RelationshipStrength,
     notes: row.notes as string,
     tags: (row.tags as string[]) || [],
+    accountValue: (row.account_value as number) || 0,
     createdAt: row.created_at as string,
   };
 }
