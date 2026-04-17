@@ -8,7 +8,8 @@ interface AuthContextType {
   loading: boolean;
   approved: boolean;
   isAdmin: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  storeCode: string;
+  signUp: (email: string, password: string, storeCode: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -21,21 +22,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [approved, setApproved] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [storeCode, setStoreCode] = useState<string>('');
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('approved, is_admin')
+      .select('approved, is_admin, store_code')
       .eq('id', userId)
       .maybeSingle();
     if (error) {
       console.error('Profile fetch error:', error);
       setApproved(false);
       setIsAdmin(false);
+      setStoreCode('');
       return;
     }
     setApproved(data?.approved ?? false);
     setIsAdmin(data?.is_admin ?? false);
+    setStoreCode(data?.store_code ?? '');
   };
 
   useEffect(() => {
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setApproved(false);
         setIsAdmin(false);
+        setStoreCode('');
       }
       setLoading(false);
     });
@@ -63,11 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, storeCode: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { store_code: storeCode.trim().toUpperCase() },
+      },
     });
     return { error: error as Error | null };
   };
@@ -82,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, approved, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, approved, isAdmin, storeCode, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

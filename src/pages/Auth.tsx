@@ -15,6 +15,7 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
+  const [signupStoreCode, setSignupStoreCode] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +36,12 @@ export default function Auth() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (!signupStoreCode.trim()) {
+      toast.error('Store code is required');
+      return;
+    }
     setLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword);
+    const { error } = await signUp(signupEmail, signupPassword, signupStoreCode);
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -89,6 +94,17 @@ export default function Auth() {
                 <div className="space-y-1.5">
                   <Label>Confirm Password</Label>
                   <Input type="password" value={signupConfirm} onChange={e => setSignupConfirm(e.target.value)} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Store Code</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. OW-STC"
+                    value={signupStoreCode}
+                    onChange={e => setSignupStoreCode(e.target.value.toUpperCase())}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Enter the store code provided by your manager.</p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}

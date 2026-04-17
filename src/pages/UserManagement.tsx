@@ -11,6 +11,7 @@ interface Profile {
   email: string;
   approved: boolean;
   is_admin: boolean;
+  store_code: string;
   created_at: string;
 }
 
@@ -66,6 +67,7 @@ export default function UserManagement() {
                   <p className="text-xs text-muted-foreground">
                     Signed up {new Date(p.created_at).toLocaleDateString()}
                   </p>
+                  <p className="text-xs font-mono text-muted-foreground">Store: {p.store_code || '—'}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button size="sm" onClick={() => updateProfile(p.id, { approved: true })}>
@@ -92,6 +94,7 @@ export default function UserManagement() {
                   <p className="text-xs text-muted-foreground">
                     Since {new Date(p.created_at).toLocaleDateString()}
                   </p>
+                  <p className="text-xs font-mono text-muted-foreground">Store: {p.store_code || '—'}</p>
                 </div>
                 {p.is_admin && <Badge variant="default" className="text-xs shrink-0">Admin</Badge>}
               </div>

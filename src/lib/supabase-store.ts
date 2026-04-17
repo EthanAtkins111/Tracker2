@@ -1,11 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Account, Contact, Interaction, FollowUp, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus } from './types';
 
-// Helper to get current user id
 async function getUserId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
   return user.id;
+}
+
+async function getStoreCode(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data, error } = await supabase.from('profiles').select('store_code').eq('id', user.id).maybeSingle();
+  if (error || !data?.store_code) throw new Error('Could not determine store code');
+  return data.store_code;
 }
 
 // ===== ACCOUNTS =====
@@ -23,8 +30,10 @@ export async function fetchAccount(id: string): Promise<Account | null> {
 
 export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account> {
   const userId = await getUserId();
+  const storeCode = await getStoreCode();
   const { data, error } = await supabase.from('accounts').insert({
     user_id: userId,
+    store_code: storeCode,
     name: account.name,
     address: account.address,
     city: account.city,
@@ -110,8 +119,10 @@ export async function fetchContact(id: string): Promise<Contact | null> {
 
 export async function createContact(contact: Omit<Contact, 'id'>): Promise<Contact> {
   const userId = await getUserId();
+  const storeCode = await getStoreCode();
   const { data, error } = await supabase.from('contacts').insert({
     user_id: userId,
+    store_code: storeCode,
     account_id: contact.accountId,
     name: contact.name,
     role: contact.role,
@@ -175,8 +186,10 @@ export async function fetchLastInteraction(accountId: string): Promise<Interacti
 
 export async function createInteraction(interaction: Omit<Interaction, 'id'>): Promise<Interaction> {
   const userId = await getUserId();
+  const storeCode = await getStoreCode();
   const { data, error } = await supabase.from('interactions').insert({
     user_id: userId,
+    store_code: storeCode,
     account_id: interaction.accountId,
     contact_id: interaction.contactId || null,
     date: interaction.date,
@@ -215,8 +228,10 @@ export async function fetchFollowUpsByAccount(accountId: string): Promise<Follow
 
 export async function createFollowUp(followUp: Omit<FollowUp, 'id'>): Promise<FollowUp> {
   const userId = await getUserId();
+  const storeCode = await getStoreCode();
   const { data, error } = await supabase.from('follow_ups').insert({
     user_id: userId,
+    store_code: storeCode,
     account_id: followUp.accountId,
     contact_id: followUp.contactId || null,
     due_date: followUp.dueDate,
@@ -291,16 +306,15 @@ export async function seedRegionData(force = false): Promise<void> {
     if (count && count > 0) { console.log('Seed skipped – already have', count, 'accounts'); return; }
   }
 
-  if (force) {
-    // Clear existing accounts to prevent duplicates
-    const userId = await getUserId();
-    await supabase.from('follow_ups').delete().eq('user_id', userId);
-    await supabase.from('interactions').delete().eq('user_id', userId);
-    await supabase.from('contacts').delete().eq('user_id', userId);
-    await supabase.from('accounts').delete().eq('user_id', userId);
-  }
-
   const userId = await getUserId();
+  const storeCode = await getStoreCode();
+
+  if (force) {
+    await supabase.from('follow_ups').delete().eq('store_code', storeCode);
+    await supabase.from('interactions').delete().eq('store_code', storeCode);
+    await supabase.from('contacts').delete().eq('store_code', storeCode);
+    await supabase.from('accounts').delete().eq('store_code', storeCode);
+  }
   console.log('Seeding region data for user:', userId);
 
   const accounts = [
@@ -405,7 +419,7 @@ export async function seedRegionData(force = false): Promise<void> {
   ];
 
   for (let i = 0; i < accounts.length; i += 20) {
-    const batch = accounts.slice(i, i + 20).map(a => ({ ...a, user_id: userId }));
+    const batch = accounts.slice(i, i + 20).map(a => ({ ...a, user_id: userId, store_code: storeCode }));
     const { error } = await supabase.from('accounts').insert(batch);
     if (error) throw error;
   }
