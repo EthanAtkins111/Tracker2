@@ -15,7 +15,7 @@ export interface Account {
   ownership: string;
   organization: string;
   priorityTier: PriorityTier;
-  adpVolume: string;
+  adpVolume?: string;
   relationshipStrength: RelationshipStrength;
   notes: string;
   tags: string[];
