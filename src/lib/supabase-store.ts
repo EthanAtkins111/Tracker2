@@ -58,6 +58,7 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     priority_tier: account.priorityTier,
     adp_volume: account.adpVolume,
     pipeline_stage: account.pipelineStage || 'Prospect',
+    account_manager: account.accountManager || null,
     relationship_strength: account.relationshipStrength,
     notes: account.notes,
     tags: account.tags,
@@ -82,6 +83,7 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
   if (updates.priorityTier !== undefined) payload.priority_tier = updates.priorityTier;
   if (updates.adpVolume !== undefined) payload.adp_volume = updates.adpVolume;
   if (updates.pipelineStage !== undefined) payload.pipeline_stage = updates.pipelineStage;
+  if (updates.accountManager !== undefined) payload.account_manager = updates.accountManager || null;
   if (updates.relationshipStrength !== undefined) payload.relationship_strength = updates.relationshipStrength;
   if (updates.notes !== undefined) payload.notes = updates.notes;
   if (updates.tags !== undefined) payload.tags = updates.tags;
@@ -121,6 +123,7 @@ function mapAccount(row: Record<string, unknown>): Account {
     latitude: row.latitude != null ? (row.latitude as number) : null,
     longitude: row.longitude != null ? (row.longitude as number) : null,
     pipelineStage: ((row.pipeline_stage as string) || 'Prospect') as PipelineStage,
+    accountManager: (row.account_manager as string) || '',
   };
 }
 

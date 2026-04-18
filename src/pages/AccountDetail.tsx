@@ -89,6 +89,7 @@ export default function AccountDetail() {
               <div><span className="text-muted-foreground block text-xs">Priority</span><PriorityBadge tier={account.priorityTier} /></div>
               <div><span className="text-muted-foreground block text-xs">Relationship</span><StrengthBadge strength={account.relationshipStrength} /></div>
               <div><span className="text-muted-foreground block text-xs">Pipeline Stage</span><PipelineBadge stage={account.pipelineStage} /></div>
+              <div><span className="text-muted-foreground block text-xs">Account Manager</span>{account.accountManager || '—'}</div>
               <div><span className="text-muted-foreground block text-xs">Last Visit</span><DaysSinceBadge days={daysSince} /></div>
             </div>
             {account.tags.length > 0 && <div className="mt-4 flex flex-wrap gap-1.5">{account.tags.map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}</div>}

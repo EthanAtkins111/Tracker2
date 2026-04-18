@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Account, AccountType, PriorityTier, RelationshipStrength, PipelineStage } from "@/lib/types";
 import { createAccount, editAccount } from "@/lib/supabase-store";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 'Group Home'];
@@ -14,6 +15,8 @@ const priorities: PriorityTier[] = ['High', 'Medium', 'Low'];
 const strengths: RelationshipStrength[] = ['Strong', 'Moderate', 'Weak', 'New'];
 const pipelineStages: PipelineStage[] = ['Prospect', 'Contacted', 'Engaged', 'Demo', 'Active', 'Lost'];
 const adpVolumeOptions = ['', 'Occasional', 'Low', 'Medium', 'High'] as const;
+
+interface AppUser { id: string; name: string; }
 
 interface Props {
   open: boolean;
@@ -36,11 +39,28 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     adpVolume: account?.adpVolume || '',
     pipelineStage: (account?.pipelineStage || 'Prospect') as PipelineStage,
     relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
+    accountManager: account?.accountManager || '',
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
     accountValue: account?.accountValue?.toString() || '0',
   });
   const [saving, setSaving] = useState(false);
+  const [users, setUsers] = useState<AppUser[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('approved', true)
+      .then(({ data }) => {
+        setUsers(
+          (data || [])
+            .filter(p => p.full_name)
+            .map(p => ({ id: p.id as string, name: p.full_name as string }))
+        );
+      });
+  }, [open]);
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
@@ -154,12 +174,24 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
               </Select>
             </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Pipeline Stage</Label>
-            <Select value={form.pipelineStage} onValueChange={v => update('pipelineStage', v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{pipelineStages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Pipeline Stage</Label>
+              <Select value={form.pipelineStage} onValueChange={v => update('pipelineStage', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{pipelineStages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Account Manager</Label>
+              <Select value={form.accountManager} onValueChange={v => update('accountManager', v)}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label>Tags (comma-separated)</Label>

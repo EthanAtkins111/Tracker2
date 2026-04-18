@@ -25,6 +25,7 @@ export interface Account {
   latitude?: number | null;
   longitude?: number | null;
   pipelineStage?: PipelineStage;
+  accountManager?: string;
 }
 
 export interface Contact {
