@@ -40,8 +40,10 @@ export async function fetchAccount(id: string): Promise<Account | null> {
 export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account> {
   const userId = await getUserId();
   const storeCode = await getStoreCode();
-  const coords = account.address && account.city
-    ? await geocodeAddress(`${account.address}, ${account.city}, Ontario, Canada`)
+  const geoQuery = [account.address, account.postalCode, account.city, 'Ontario', 'Canada']
+    .filter(Boolean).join(', ');
+  const coords = account.address || account.postalCode
+    ? await geocodeAddress(geoQuery)
     : null;
   const { data, error } = await supabase.from('accounts').insert({
     user_id: userId,
@@ -59,6 +61,7 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     notes: account.notes,
     tags: account.tags,
     account_value: account.accountValue || 0,
+    postal_code: account.postalCode || null,
     latitude: coords?.latitude ?? null,
     longitude: coords?.longitude ?? null,
   }).select().single();
@@ -81,6 +84,7 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
   if (updates.notes !== undefined) payload.notes = updates.notes;
   if (updates.tags !== undefined) payload.tags = updates.tags;
   if (updates.accountValue !== undefined) payload.account_value = updates.accountValue;
+  if (updates.postalCode !== undefined) payload.postal_code = updates.postalCode;
   if (updates.latitude !== undefined) payload.latitude = updates.latitude;
   if (updates.longitude !== undefined) payload.longitude = updates.longitude;
 
@@ -111,6 +115,7 @@ function mapAccount(row: Record<string, unknown>): Account {
     tags: (row.tags as string[]) || [],
     accountValue: (row.account_value as number) || 0,
     createdAt: row.created_at as string,
+    postalCode: (row.postal_code as string) || '',
     latitude: row.latitude != null ? (row.latitude as number) : null,
     longitude: row.longitude != null ? (row.longitude as number) : null,
   };

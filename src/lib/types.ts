@@ -20,6 +20,7 @@ export interface Account {
   tags: string[];
   accountValue?: number;
   createdAt: string;
+  postalCode?: string;
   latitude?: number | null;
   longitude?: number | null;
 }

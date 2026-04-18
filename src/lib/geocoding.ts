@@ -80,7 +80,7 @@ export async function batchGeocodeAccounts(
   let done = 0;
 
   for (const account of missing) {
-    const query = [account.address, account.city, 'Ontario', 'Canada']
+    const query = [account.address, account.postalCode, account.city, 'Ontario', 'Canada']
       .filter(Boolean)
       .join(', ');
     const coords = await geocodeAddress(query);

@@ -25,6 +25,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     name: account?.name || '',
     address: account?.address || '',
     city: account?.city || '',
+    postalCode: account?.postalCode || '',
     accountType: (account?.accountType || 'LTC') as AccountType,
     bedCount: account?.bedCount?.toString() || '0',
     ownership: account?.ownership || '',
@@ -85,6 +86,16 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
             <div className="grid gap-1.5">
               <Label>City</Label>
               <Input value={form.city} onChange={e => update('city', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Postal Code</Label>
+              <Input
+                value={form.postalCode}
+                onChange={e => update('postalCode', e.target.value.toUpperCase())}
+                placeholder="e.g. L2N 1C2"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
