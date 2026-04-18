@@ -184,10 +184,10 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
             </div>
             <div className="grid gap-1.5">
               <Label>Account Manager</Label>
-              <Select value={form.accountManager} onValueChange={v => update('accountManager', v)}>
+              <Select value={form.accountManager || 'unassigned'} onValueChange={v => update('accountManager', v === 'unassigned' ? '' : v)}>
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">— Unassigned —</SelectItem>
                   {users.map(u => <SelectItem key={u.id} value={u.name}>{u.name}</SelectItem>)}
                 </SelectContent>
               </Select>
