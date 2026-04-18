@@ -6,24 +6,28 @@ export interface GeoCoords {
 }
 
 export async function geocodeAddress(query: string): Promise<GeoCoords | null> {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ca`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'MotionTrackerCRM/1.0 (ethanatkins111@gmail.com)',
-        'Accept-Language': 'en',
-      },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data || data.length === 0) return null;
-    return {
-      latitude: parseFloat(data[0].lat),
-      longitude: parseFloat(data[0].lon),
-    };
-  } catch {
-    return null;
+  const base = 'https://nominatim.openstreetmap.org/search?format=json&limit=1';
+  // Try Canada-restricted first, fall back to unrestricted if no result
+  const urls = [
+    `${base}&countrycodes=ca&q=${encodeURIComponent(query)}`,
+    `${base}&q=${encodeURIComponent(query)}`,
+  ];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return {
+          latitude: parseFloat(data[0].lat),
+          longitude: parseFloat(data[0].lon),
+        };
+      }
+    } catch {
+      // network error — try next url or return null
+    }
   }
+  return null;
 }
 
 const EARTH_RADIUS_KM = 6371;
