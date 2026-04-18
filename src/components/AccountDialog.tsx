@@ -13,6 +13,7 @@ const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 
 const priorities: PriorityTier[] = ['High', 'Medium', 'Low'];
 const strengths: RelationshipStrength[] = ['Strong', 'Moderate', 'Weak', 'New'];
 const pipelineStages: PipelineStage[] = ['Prospect', 'Contacted', 'Engaged', 'Demo', 'Active', 'Lost'];
+const adpVolumeOptions = ['', 'Occasional', 'Low', 'Medium', 'High'] as const;
 
 interface Props {
   open: boolean;
@@ -137,7 +138,13 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
             </div>
             <div className="grid gap-1.5">
               <Label>ADP Volume</Label>
-              <Input value={form.adpVolume} onChange={e => update('adpVolume', e.target.value)} placeholder="e.g. ADP funding info" />
+              <Select value={form.adpVolume} onValueChange={v => update('adpVolume', v)}>
+                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {adpVolumeOptions.filter(o => o).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-1.5 col-span-2 sm:col-span-1">
               <Label>Relationship</Label>
