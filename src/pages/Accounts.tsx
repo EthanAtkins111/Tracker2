@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PriorityBadge, StrengthBadge, DaysSinceBadge } from "@/components/StatusBadges";
+import { PriorityBadge, StrengthBadge, DaysSinceBadge, PipelineBadge } from "@/components/StatusBadges";
 import { AccountDialog } from "@/components/AccountDialog";
+import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { fetchLastInteraction, fetchFollowUpsByAccount } from "@/lib/supabase-store";
 import { AccountType, PriorityTier, RelationshipStrength, Interaction, FollowUp } from "@/lib/types";
-import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed } from "lucide-react";
+import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed, Phone } from "lucide-react";
 import { geocodeAddress, getCurrentLocation, haversineDistanceKm, formatDistance, batchGeocodeAccounts } from "@/lib/geocoding";
 import type { GeoCoords } from "@/lib/geocoding";
 import { toast } from "sonner";
@@ -25,9 +26,10 @@ const tabTypes: { label: string; value: AccountType | 'All' }[] = [
 ];
 
 export default function Accounts() {
-  const { accounts, loading, refresh } = useCrmData();
+  const { accounts, contacts, loading, refresh } = useCrmData();
   const navigate = useNavigate();
   const [showAdd, setShowAdd] = useState(false);
+  const [quickLogAccountId, setQuickLogAccountId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [cityFilter, setCityFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -265,12 +267,22 @@ export default function Accounts() {
                     </span>
                   )}
                   {account.bedCount > 0 && <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1"><Bed className="h-3 w-3" /> {account.bedCount}</span>}
+                  <span className="hidden sm:block"><PipelineBadge stage={account.pipelineStage} /></span>
                   <PriorityBadge tier={account.priorityTier} />
                   <span className="hidden sm:block"><StrengthBadge strength={account.relationshipStrength} /></span>
                   <div className="text-right">
                     <DaysSinceBadge days={getDaysSince(account.id)} />
                     {nextFu && <p className="text-xs text-muted-foreground hidden sm:block">Next: {new Date(nextFu.dueDate).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</p>}
                   </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    title="Log visit"
+                    onClick={e => { e.stopPropagation(); setQuickLogAccountId(account.id); }}
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -278,6 +290,16 @@ export default function Accounts() {
         })}
       </div>
       <AccountDialog open={showAdd} onOpenChange={setShowAdd} onSaved={refresh} />
+      <InteractionDialog
+        key={quickLogAccountId ?? 'none'}
+        open={!!quickLogAccountId}
+        onOpenChange={open => { if (!open) setQuickLogAccountId(null); }}
+        defaultAccountId={quickLogAccountId ?? undefined}
+        defaultType="Visit"
+        accounts={accounts}
+        contacts={contacts}
+        onSaved={() => { setQuickLogAccountId(null); refresh(); }}
+      />
     </div>
   );
 }

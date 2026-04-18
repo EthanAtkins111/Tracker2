@@ -1,6 +1,7 @@
 export type AccountType = 'LTC' | 'Retirement' | 'Hospital' | 'Clinic' | 'Group Home';
 export type PriorityTier = 'High' | 'Medium' | 'Low';
 export type RelationshipStrength = 'Strong' | 'Moderate' | 'Weak' | 'New';
+export type PipelineStage = 'Prospect' | 'Contacted' | 'Engaged' | 'Demo' | 'Active' | 'Lost';
 export type InteractionType = 'Visit' | 'Call' | 'Email' | 'Demo' | 'Service Follow-up';
 export type FollowUpStatus = 'Pending' | 'Completed';
 
@@ -23,6 +24,7 @@ export interface Account {
   postalCode?: string;
   latitude?: number | null;
   longitude?: number | null;
+  pipelineStage?: PipelineStage;
 }
 
 export interface Contact {

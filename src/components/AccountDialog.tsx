@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Account, AccountType, PriorityTier, RelationshipStrength } from "@/lib/types";
+import { Account, AccountType, PriorityTier, RelationshipStrength, PipelineStage } from "@/lib/types";
 import { createAccount, editAccount } from "@/lib/supabase-store";
 import { toast } from "sonner";
 
 const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 'Group Home'];
 const priorities: PriorityTier[] = ['High', 'Medium', 'Low'];
 const strengths: RelationshipStrength[] = ['Strong', 'Moderate', 'Weak', 'New'];
+const pipelineStages: PipelineStage[] = ['Prospect', 'Contacted', 'Engaged', 'Demo', 'Active', 'Lost'];
 
 interface Props {
   open: boolean;
@@ -32,6 +33,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     organization: account?.organization || '',
     priorityTier: (account?.priorityTier || 'Medium') as PriorityTier,
     adpVolume: account?.adpVolume || '',
+    pipelineStage: (account?.pipelineStage || 'Prospect') as PipelineStage,
     relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
@@ -144,6 +146,13 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
                 <SelectContent>{strengths.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Pipeline Stage</Label>
+            <Select value={form.pipelineStage} onValueChange={v => update('pipelineStage', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{pipelineStages.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
           <div className="grid gap-1.5">
             <Label>Tags (comma-separated)</Label>

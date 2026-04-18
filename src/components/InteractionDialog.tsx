@@ -22,22 +22,32 @@ const followUpOptions = [
   { label: 'Custom', days: 0 },
   { label: 'None', days: -1 },
 ];
+const outcomePresets = [
+  'Will place order',
+  'Needs follow-up',
+  'Not interested',
+  'Left materials',
+  'Meeting scheduled',
+  'Already has supplier',
+  'Referred to colleague',
+];
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultAccountId?: string;
   defaultContactId?: string;
+  defaultType?: InteractionType;
   accounts: Account[];
   contacts: Contact[];
   onSaved: () => void;
 }
 
-export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaultContactId, accounts, contacts: allContacts, onSaved }: Props) {
+export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaultContactId, defaultType, accounts, contacts: allContacts, onSaved }: Props) {
   const [accountId, setAccountId] = useState(defaultAccountId || '');
   const [contactId, setContactId] = useState(defaultContactId || '');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [type, setType] = useState<InteractionType>('Visit');
+  const [type, setType] = useState<InteractionType>(defaultType || 'Visit');
   const [notes, setNotes] = useState('');
   const [outcome, setOutcome] = useState('');
   const [followUpChoice, setFollowUpChoice] = useState('None');
@@ -161,7 +171,24 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
           </div>
           <div className="grid gap-1.5">
             <Label>Outcome</Label>
-            <Input value={outcome} onChange={e => setOutcome(e.target.value)} />
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {outcomePresets.map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setOutcome(p)}
+                  className={cn(
+                    "text-xs px-2 py-1 rounded-full border transition-colors",
+                    outcome === p
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+            <Input value={outcome} onChange={e => setOutcome(e.target.value)} placeholder="Or type a custom outcome..." />
           </div>
           <div className="border-t pt-4">
             <Label className="text-sm font-medium">Schedule Follow-up</Label>
