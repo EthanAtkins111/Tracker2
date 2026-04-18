@@ -136,33 +136,44 @@ export function InteractionDialog({ open, onOpenChange, defaultAccountId, defaul
               </PopoverContent>
             </Popover>
           </div>
-          {contacts.length > 0 && (
+          {accountId && (
             <div className="grid gap-1.5">
-              <Label>Contact</Label>
-              <Popover open={contactOpen} onOpenChange={setContactOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={contactOpen} className="w-full justify-between font-normal">
-                    {contactId ? (() => { const c = allContacts.find(c => c.id === contactId); return c ? `${c.name} — ${c.role}` : "Select contact"; })() : "Select contact"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search contacts..." />
-                    <CommandList>
-                      <CommandEmpty>No contacts found.</CommandEmpty>
-                      <CommandGroup>
-                        {contacts.map(c => (
-                          <CommandItem key={c.id} value={`${c.name} ${c.role}`} onSelect={() => { setContactId(c.id); setContactOpen(false); }}>
-                            <Check className={cn("mr-2 h-4 w-4", contactId === c.id ? "opacity-100" : "opacity-0")} />
-                            {c.name} — {c.role}
+              <Label>Contact <span className="text-muted-foreground font-normal">(who did you speak with?)</span></Label>
+              {contacts.length === 0 ? (
+                <p className="text-xs text-muted-foreground border rounded-md px-3 py-2 bg-muted/30">No contacts on file for this account — add one from the account page.</p>
+              ) : (
+                <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={contactOpen} className="w-full justify-between font-normal">
+                      {contactId ? (() => { const c = allContacts.find(c => c.id === contactId); return c ? `${c.name} — ${c.role}` : "Select contact"; })() : "Select contact (optional)"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search contacts..." />
+                      <CommandList>
+                        <CommandEmpty>No contacts found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem value="none" onSelect={() => { setContactId(''); setContactOpen(false); }}>
+                            <Check className={cn("mr-2 h-4 w-4", !contactId ? "opacity-100" : "opacity-0")} />
+                            <span className="text-muted-foreground">None</span>
                           </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                          {contacts.map(c => (
+                            <CommandItem key={c.id} value={`${c.name} ${c.role}`} onSelect={() => { setContactId(c.id); setContactOpen(false); }}>
+                              <Check className={cn("mr-2 h-4 w-4", contactId === c.id ? "opacity-100" : "opacity-0")} />
+                              <div>
+                                <span className="font-medium">{c.name}</span>
+                                {c.role && <span className="text-muted-foreground text-xs ml-1.5">— {c.role}</span>}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           )}
           <div className="grid gap-1.5">
