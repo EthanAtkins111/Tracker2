@@ -56,7 +56,7 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     ownership: account.ownership,
     organization: account.organization,
     priority_tier: account.priorityTier,
-    adp_volume: account.vendorInfo,
+    adp_volume: account.adpVolume,
     relationship_strength: account.relationshipStrength,
     notes: account.notes,
     tags: account.tags,
@@ -79,7 +79,7 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
   if (updates.ownership !== undefined) payload.ownership = updates.ownership;
   if (updates.organization !== undefined) payload.organization = updates.organization;
   if (updates.priorityTier !== undefined) payload.priority_tier = updates.priorityTier;
-  if (updates.vendorInfo !== undefined) payload.adp_volume = updates.vendorInfo;
+  if (updates.adpVolume !== undefined) payload.adp_volume = updates.adpVolume;
   if (updates.relationshipStrength !== undefined) payload.relationship_strength = updates.relationshipStrength;
   if (updates.notes !== undefined) payload.notes = updates.notes;
   if (updates.tags !== undefined) payload.tags = updates.tags;
@@ -109,7 +109,7 @@ function mapAccount(row: Record<string, unknown>): Account {
     ownership: row.ownership as string,
     organization: row.organization as string,
     priorityTier: row.priority_tier as PriorityTier,
-    vendorInfo: (row.adp_volume as string) || '',
+    adpVolume: (row.adp_volume as string) || '',
     relationshipStrength: row.relationship_strength as RelationshipStrength,
     notes: row.notes as string,
     tags: (row.tags as string[]) || [],

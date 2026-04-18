@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SnoozeDialog } from "@/components/SnoozeDialog";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ export default function FollowUps() {
   const { followUps, loading, refresh, getAccountName, getAccountCity, getAccountPriority, getContactName } = useCrmData();
   const navigate = useNavigate();
   const [tab, setTab] = useState('pending');
+  const [snoozeId, setSnoozeId] = useState<string | null>(null);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
 
@@ -23,9 +25,12 @@ export default function FollowUps() {
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
   const handleComplete = async (id: string) => { await editFollowUp(id, { status: 'Completed' }); toast.success('Done'); refresh(); };
-  const handleSnooze = async (id: string) => {
-    const d = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-    await editFollowUp(id, { dueDate: d }); toast.success('Snoozed 1 week'); refresh();
+  const handleSnoozeConfirm = async (date: string) => {
+    if (!snoozeId) return;
+    await editFollowUp(snoozeId, { dueDate: date });
+    toast.success('Follow-up snoozed');
+    setSnoozeId(null);
+    refresh();
   };
 
   return (
@@ -58,7 +63,7 @@ export default function FollowUps() {
                 </div>
                 {f.status === 'Pending' && (
                   <div className="flex gap-1.5 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => handleSnooze(f.id)}><Clock className="h-3 w-3 mr-1" /> Snooze</Button>
+                    <Button size="sm" variant="outline" onClick={() => setSnoozeId(f.id)}><Clock className="h-3 w-3 mr-1" /> Snooze</Button>
                     <Button size="sm" onClick={() => handleComplete(f.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Done</Button>
                   </div>
                 )}
@@ -67,6 +72,7 @@ export default function FollowUps() {
           );
         })}
       </div>
+      <SnoozeDialog open={!!snoozeId} onOpenChange={open => { if (!open) setSnoozeId(null); }} onConfirm={handleSnoozeConfirm} />
     </div>
   );
 }

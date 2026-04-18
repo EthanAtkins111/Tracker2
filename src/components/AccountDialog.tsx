@@ -31,7 +31,7 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
     ownership: account?.ownership || '',
     organization: account?.organization || '',
     priorityTier: (account?.priorityTier || 'Medium') as PriorityTier,
-    vendorInfo: account?.vendorInfo || '',
+    adpVolume: account?.adpVolume || '',
     relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
     notes: account?.notes || '',
     tags: account?.tags?.join(', ') || '',
@@ -134,8 +134,8 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
               </Select>
             </div>
             <div className="grid gap-1.5">
-              <Label>Vendor Info</Label>
-              <Input value={form.vendorInfo} onChange={e => update('vendorInfo', e.target.value)} placeholder="e.g. Medline, Cardinal Health" />
+              <Label>ADP Volume</Label>
+              <Input value={form.adpVolume} onChange={e => update('adpVolume', e.target.value)} placeholder="e.g. ADP funding info" />
             </div>
             <div className="grid gap-1.5 col-span-2 sm:col-span-1">
               <Label>Relationship</Label>

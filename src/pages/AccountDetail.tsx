@@ -11,6 +11,7 @@ import { useAccountDetail } from "@/hooks/use-crm-data";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { editFollowUp, removeAccount, removeContact } from "@/lib/supabase-store";
 import { ArrowLeft, Edit, Trash2, Plus, Phone, Mail, MapPin, Bed, CalendarClock, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { SnoozeDialog } from "@/components/SnoozeDialog";
 import { toast } from "sonner";
 
 export default function AccountDetail() {
@@ -22,6 +23,7 @@ export default function AccountDetail() {
   const [showContact, setShowContact] = useState(false);
   const [showInteraction, setShowInteraction] = useState(false);
   const [editingContact, setEditingContact] = useState<string | null>(null);
+  const [snoozeId, setSnoozeId] = useState<string | null>(null);
 
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
   if (!account) return <div className="p-8 text-center text-muted-foreground">Account not found</div>;
@@ -44,10 +46,11 @@ export default function AccountDetail() {
     refresh();
   };
 
-  const handleSnooze = async (fuId: string) => {
-    const newDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-    await editFollowUp(fuId, { dueDate: newDate });
-    toast.success('Snoozed 1 week');
+  const handleSnoozeConfirm = async (date: string) => {
+    if (!snoozeId) return;
+    await editFollowUp(snoozeId, { dueDate: date });
+    toast.success('Follow-up snoozed');
+    setSnoozeId(null);
     refresh();
   };
 
@@ -81,7 +84,7 @@ export default function AccountDetail() {
               <div><span className="text-muted-foreground block text-xs">Bed Count</span><span className="flex items-center gap-1"><Bed className="h-3 w-3" />{account.bedCount}</span></div>
               <div><span className="text-muted-foreground block text-xs">Ownership</span>{account.ownership}</div>
               <div><span className="text-muted-foreground block text-xs">Organization</span>{account.organization}</div>
-              <div><span className="text-muted-foreground block text-xs">Vendor Info</span>{account.vendorInfo || '—'}</div>
+              <div><span className="text-muted-foreground block text-xs">ADP Volume</span>{account.adpVolume || '—'}</div>
               <div><span className="text-muted-foreground block text-xs">Account Value</span>{account.accountValue ? `$${account.accountValue.toLocaleString()}` : '—'}</div>
               <div><span className="text-muted-foreground block text-xs">Priority</span><PriorityBadge tier={account.priorityTier} /></div>
               <div><span className="text-muted-foreground block text-xs">Relationship</span><StrengthBadge strength={account.relationshipStrength} /></div>
@@ -137,7 +140,7 @@ export default function AccountDetail() {
                     {f.notes && <p className="text-xs text-muted-foreground">{f.notes}</p>}
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => handleSnooze(f.id)}><Clock className="h-3 w-3 mr-1" /> Snooze</Button>
+                    <Button size="sm" variant="outline" onClick={() => setSnoozeId(f.id)}><Clock className="h-3 w-3 mr-1" /> Snooze</Button>
                     <Button size="sm" onClick={() => handleCompleteFollowUp(f.id)}><CheckCircle2 className="h-3 w-3 mr-1" /> Done</Button>
                   </div>
                 </div>
@@ -173,6 +176,7 @@ export default function AccountDetail() {
         </CardContent>
       </Card>
 
+      <SnoozeDialog open={!!snoozeId} onOpenChange={open => { if (!open) setSnoozeId(null); }} onConfirm={handleSnoozeConfirm} />
       <AccountDialog open={showEdit} onOpenChange={setShowEdit} account={account} onSaved={refresh} />
       <ContactDialog open={showContact} onOpenChange={setShowContact} contact={editingContact ? contacts.find(c => c.id === editingContact) : undefined} defaultAccountId={account.id} accounts={accounts} onSaved={refresh} />
       <InteractionDialog open={showInteraction} onOpenChange={setShowInteraction} defaultAccountId={account.id} accounts={accounts} contacts={allContacts} onSaved={refresh} />

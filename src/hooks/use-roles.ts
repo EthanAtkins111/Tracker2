@@ -1,47 +1,53 @@
 import { useState, useEffect, useCallback } from "react";
-
-const STORAGE_KEY = "crm-custom-roles";
-const DEFAULT_ROLES: string[] = [];
-
-function loadCustomRoles(): string[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCustomRoles(roles: string[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(roles));
-}
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useRoles() {
-  const [customRoles, setCustomRoles] = useState<string[]>(loadCustomRoles);
+  const { storeCode } = useAuth();
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
 
-  const allRoles = [...DEFAULT_ROLES, ...customRoles];
+  useEffect(() => {
+    if (!storeCode) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('store_settings')
+      .select('custom_roles')
+      .eq('store_code', storeCode)
+      .maybeSingle()
+      .then(({ data }: { data: { custom_roles: string[] } | null }) => {
+        setCustomRoles(data?.custom_roles ?? []);
+      });
+  }, [storeCode]);
+
+  const persist = useCallback(async (roles: string[]) => {
+    if (!storeCode) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('store_settings')
+      .upsert({ store_code: storeCode, custom_roles: roles, updated_at: new Date().toISOString() });
+  }, [storeCode]);
 
   const addRole = useCallback((role: string) => {
     const trimmed = role.trim();
-    if (!trimmed || DEFAULT_ROLES.includes(trimmed) || customRoles.includes(trimmed)) return;
+    if (!trimmed || customRoles.includes(trimmed)) return;
     const updated = [...customRoles, trimmed];
     setCustomRoles(updated);
-    saveCustomRoles(updated);
-  }, [customRoles]);
+    persist(updated);
+  }, [customRoles, persist]);
 
   const removeRole = useCallback((role: string) => {
     const updated = customRoles.filter(r => r !== role);
     setCustomRoles(updated);
-    saveCustomRoles(updated);
-  }, [customRoles]);
+    persist(updated);
+  }, [customRoles, persist]);
 
   const renameRole = useCallback((oldName: string, newName: string) => {
     const trimmed = newName.trim();
-    if (!trimmed || DEFAULT_ROLES.includes(oldName)) return;
+    if (!trimmed) return;
     const updated = customRoles.map(r => r === oldName ? trimmed : r);
     setCustomRoles(updated);
-    saveCustomRoles(updated);
-  }, [customRoles]);
+    persist(updated);
+  }, [customRoles, persist]);
 
-  return { allRoles, defaultRoles: DEFAULT_ROLES, customRoles, addRole, removeRole, renameRole };
+  return { allRoles: customRoles, defaultRoles: [] as string[], customRoles, addRole, removeRole, renameRole };
 }
