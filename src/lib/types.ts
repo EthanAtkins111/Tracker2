@@ -20,6 +20,8 @@ export interface Account {
   tags: string[];
   accountValue?: number;
   createdAt: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface Contact {

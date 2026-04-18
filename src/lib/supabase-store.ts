@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Account, Contact, Interaction, FollowUp, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus } from './types';
+import { geocodeAddress } from './geocoding';
 
 async function getUserId(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,6 +40,9 @@ export async function fetchAccount(id: string): Promise<Account | null> {
 export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account> {
   const userId = await getUserId();
   const storeCode = await getStoreCode();
+  const coords = account.address && account.city
+    ? await geocodeAddress(`${account.address}, ${account.city}, Ontario, Canada`)
+    : null;
   const { data, error } = await supabase.from('accounts').insert({
     user_id: userId,
     store_code: storeCode,
@@ -55,6 +59,8 @@ export async function createAccount(account: Omit<Account, 'id' | 'createdAt'>):
     notes: account.notes,
     tags: account.tags,
     account_value: account.accountValue || 0,
+    latitude: coords?.latitude ?? null,
+    longitude: coords?.longitude ?? null,
   }).select().single();
   if (error) throw error;
   return mapAccount(data);
@@ -75,6 +81,8 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
   if (updates.notes !== undefined) payload.notes = updates.notes;
   if (updates.tags !== undefined) payload.tags = updates.tags;
   if (updates.accountValue !== undefined) payload.account_value = updates.accountValue;
+  if (updates.latitude !== undefined) payload.latitude = updates.latitude;
+  if (updates.longitude !== undefined) payload.longitude = updates.longitude;
 
   const { data, error } = await supabase.from('accounts').update(payload).eq('id', id).select().single();
   if (error) throw error;
@@ -103,6 +111,8 @@ function mapAccount(row: Record<string, unknown>): Account {
     tags: (row.tags as string[]) || [],
     accountValue: (row.account_value as number) || 0,
     createdAt: row.created_at as string,
+    latitude: row.latitude != null ? (row.latitude as number) : null,
+    longitude: row.longitude != null ? (row.longitude as number) : null,
   };
 }
 
