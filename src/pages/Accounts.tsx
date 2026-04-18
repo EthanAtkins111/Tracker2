@@ -11,7 +11,7 @@ import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { fetchLastInteraction, fetchFollowUpsByAccount } from "@/lib/supabase-store";
 import { AccountType, PriorityTier, RelationshipStrength, Interaction, FollowUp } from "@/lib/types";
-import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed, Phone } from "lucide-react";
+import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed, Phone, Download } from "lucide-react";
 import { geocodeAddress, getCurrentLocation, haversineDistanceKm, formatDistance, batchGeocodeAccounts } from "@/lib/geocoding";
 import type { GeoCoords } from "@/lib/geocoding";
 import { toast } from "sonner";
@@ -111,6 +111,24 @@ export default function Accounts() {
     setGeocodingProgress(null);
   };
 
+  const exportCSV = () => {
+    const headers = ['Name', 'City', 'Address', 'Postal Code', 'Type', 'Bed Count', 'Priority', 'Relationship', 'Pipeline Stage', 'Ownership', 'Organization', 'ADP Volume', 'Account Value', 'Tags', 'Notes'];
+    const rows = filtered.map(a => [
+      a.name, a.city, a.address, a.postalCode || '', a.accountType, a.bedCount,
+      a.priorityTier, a.relationshipStrength, a.pipelineStage || '',
+      a.ownership, a.organization, a.adpVolume, a.accountValue || 0,
+      a.tags.join('; '), a.notes,
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `accounts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading...</div>;
 
   const cities = [...new Set(accounts.map(a => a.city))].sort();
@@ -155,9 +173,14 @@ export default function Accounts() {
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-bold">Accounts</h1>
-        <Button size="sm" onClick={() => setShowAdd(true)}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Account
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={exportCSV} title="Export to CSV">
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" onClick={() => setShowAdd(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Account
+          </Button>
+        </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">

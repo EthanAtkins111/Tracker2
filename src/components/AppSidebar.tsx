@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog, Settings, CircleUser } from "lucide-react";
+import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog, Settings, CircleUser, BarChart2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,15 +24,18 @@ const navItems = [
   { title: "My Account", url: "/profile", icon: CircleUser },
 ];
 
+const adminItems = [
+  { title: "Users", url: "/users", icon: UserCog },
+  { title: "Activity Report", url: "/activity", icon: BarChart2 },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { isAdmin } = useAuth();
 
-  const allItems = isAdmin
-    ? [...navItems, { title: "Users", url: "/users", icon: UserCog }]
-    : navItems;
+  const allItems = isAdmin ? [...navItems, ...adminItems] : navItems;
 
   return (
     <Sidebar collapsible="icon">

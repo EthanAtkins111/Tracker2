@@ -12,6 +12,7 @@ import Contacts from "@/pages/Contacts";
 import FollowUps from "@/pages/FollowUps";
 import Opportunities from "@/pages/Opportunities";
 import UserManagement from "@/pages/UserManagement";
+import ActivityReport from "@/pages/ActivityReport";
 import Auth from "@/pages/Auth";
 import PendingApproval from "@/pages/PendingApproval";
 import Settings from "@/pages/Settings";
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="/follow-ups" element={<FollowUps />} />
         <Route path="/opportunities" element={<Opportunities />} />
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/activity" element={<ActivityReport />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
