@@ -31,11 +31,7 @@ export function useCrmData() {
 
   useEffect(() => {
     if (user) {
-      // Deduplicate then seed on first login then load
-      deduplicateAccounts()
-        .then(() => store.seedRegionData())
-        .then(refresh)
-        .catch(() => refresh());
+      deduplicateAccounts().then(refresh).catch(() => refresh());
     }
   }, [user, refresh]);
 
