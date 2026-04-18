@@ -12,6 +12,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [signupFirstName, setSignupFirstName] = useState('');
+  const [signupLastName, setSignupLastName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
@@ -36,12 +38,17 @@ export default function Auth() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (!signupFirstName.trim() || !signupLastName.trim()) {
+      toast.error('First and last name are required');
+      return;
+    }
     if (!signupStoreCode.trim()) {
       toast.error('Store code is required');
       return;
     }
     setLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupStoreCode);
+    const fullName = `${signupFirstName.trim()} ${signupLastName.trim()}`;
+    const { error } = await signUp(signupEmail, signupPassword, signupStoreCode, fullName);
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -83,6 +90,16 @@ export default function Auth() {
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>First Name</Label>
+                    <Input type="text" value={signupFirstName} onChange={e => setSignupFirstName(e.target.value)} required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Last Name</Label>
+                    <Input type="text" value={signupLastName} onChange={e => setSignupLastName(e.target.value)} required />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <Label>Email</Label>
                   <Input type="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required />

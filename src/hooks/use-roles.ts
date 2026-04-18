@@ -33,8 +33,6 @@ export function useRoles() {
     const updated = customRoles.filter(r => r !== role);
     setCustomRoles(updated);
     saveCustomRoles(updated);
-    setCustomRoles(updated);
-    saveCustomRoles(updated);
   }, [customRoles]);
 
   const renameRole = useCallback((oldName: string, newName: string) => {

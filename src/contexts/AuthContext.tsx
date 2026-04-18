@@ -9,7 +9,9 @@ interface AuthContextType {
   approved: boolean;
   isAdmin: boolean;
   storeCode: string;
-  signUp: (email: string, password: string, storeCode: string) => Promise<{ error: Error | null }>;
+  role: string;
+  fullName: string;
+  signUp: (email: string, password: string, storeCode: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -23,11 +25,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [approved, setApproved] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [storeCode, setStoreCode] = useState<string>('');
+  const [role, setRole] = useState<string>('');
+  const [fullName, setFullName] = useState<string>('');
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('approved, is_admin, store_code')
+      .select('approved, is_admin, store_code, role, full_name')
       .eq('id', userId)
       .maybeSingle();
     if (error) {
@@ -35,11 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApproved(false);
       setIsAdmin(false);
       setStoreCode('');
+      setRole('');
+      setFullName('');
       return;
     }
     setApproved(data?.approved ?? false);
     setIsAdmin(data?.is_admin ?? false);
     setStoreCode(data?.store_code ?? '');
+    setRole(data?.role ?? '');
+    setFullName(data?.full_name ?? '');
   };
 
   useEffect(() => {
@@ -52,6 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setApproved(false);
         setIsAdmin(false);
         setStoreCode('');
+        setRole('');
+        setFullName('');
       }
       setLoading(false);
     });
@@ -68,13 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, storeCode: string) => {
+  const signUp = async (email: string, password: string, storeCode: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { store_code: storeCode.trim().toUpperCase() },
+        data: { store_code: storeCode.trim().toUpperCase(), full_name: fullName.trim() },
       },
     });
     return { error: error as Error | null };
@@ -90,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, approved, isAdmin, storeCode, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, approved, isAdmin, storeCode, role, fullName, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

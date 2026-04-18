@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog, Settings } from "lucide-react";
+import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog, Settings, CircleUser } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +21,7 @@ const navItems = [
   { title: "Follow-ups", url: "/follow-ups", icon: CalendarClock },
   { title: "Opportunities", url: "/opportunities", icon: TrendingUp },
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "My Account", url: "/profile", icon: CircleUser },
 ];
 
 export function AppSidebar() {

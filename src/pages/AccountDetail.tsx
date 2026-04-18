@@ -163,6 +163,7 @@ export default function AccountDetail() {
                     <span className="text-xs text-muted-foreground">{new Date(i.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   {contactName && <p className="text-xs text-muted-foreground">with {contactName}</p>}
+                  {i.addedByName && <p className="text-xs text-muted-foreground">logged by {i.addedByName}</p>}
                   {i.notes && <p className="text-sm mt-1">{i.notes}</p>}
                   {i.outcome && <p className="text-xs text-primary mt-0.5">→ {i.outcome}</p>}
                 </div>

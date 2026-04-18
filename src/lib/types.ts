@@ -40,6 +40,7 @@ export interface Interaction {
   type: InteractionType;
   notes: string;
   outcome: string;
+  addedByName?: string;
 }
 
 export interface FollowUp {

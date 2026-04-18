@@ -7,9 +7,9 @@ import { AccountDialog } from "@/components/AccountDialog";
 import { ContactDialog } from "@/components/ContactDialog";
 import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
-import { fetchInteractions, fetchLastInteraction, seedRegionData } from "@/lib/supabase-store";
+import { fetchInteractions, fetchLastInteraction } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Phone, Building2, Users, MapPin, CalendarClock, AlertTriangle, Clock, LogOut, Database, TrendingUp } from "lucide-react";
+import { Plus, Phone, Building2, Users, MapPin, CalendarClock, AlertTriangle, Clock, LogOut, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Interaction } from "@/lib/types";
 
@@ -91,19 +91,7 @@ export default function Dashboard() {
           <Button size="sm" variant="outline" onClick={() => setShowContact(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Add</span> Contact
           </Button>
-          <Button size="sm" variant="outline" onClick={async () => {
-            try {
-              toast.info('Loading sample data...');
-              await seedRegionData(true);
-              await refresh();
-              toast.success('Sample data loaded!');
-            } catch (e: any) {
-              toast.error('Failed: ' + (e?.message || 'Unknown error'));
-            }
-          }}>
-            <Database className="mr-1.5 h-3.5 w-3.5" /> <span className="hidden sm:inline">Load</span> Data
-          </Button>
-          <Button size="sm" variant="ghost" onClick={signOut}>
+<Button size="sm" variant="ghost" onClick={signOut}>
             <LogOut className="h-3.5 w-3.5" />
           </Button>
         </div>

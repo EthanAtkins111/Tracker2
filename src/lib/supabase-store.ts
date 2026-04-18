@@ -15,6 +15,14 @@ async function getStoreCode(): Promise<string> {
   return data.store_code;
 }
 
+async function getProfile(): Promise<{ storeCode: string; fullName: string | null }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data, error } = await supabase.from('profiles').select('store_code, full_name').eq('id', user.id).maybeSingle();
+  if (error || !data?.store_code) throw new Error('Could not determine store code');
+  return { storeCode: data.store_code, fullName: data.full_name ?? null };
+}
+
 // ===== ACCOUNTS =====
 export async function fetchAccounts(): Promise<Account[]> {
   const { data, error } = await supabase.from('accounts').select('*').order('name');
@@ -186,7 +194,7 @@ export async function fetchLastInteraction(accountId: string): Promise<Interacti
 
 export async function createInteraction(interaction: Omit<Interaction, 'id'>): Promise<Interaction> {
   const userId = await getUserId();
-  const storeCode = await getStoreCode();
+  const { storeCode, fullName } = await getProfile();
   const { data, error } = await supabase.from('interactions').insert({
     user_id: userId,
     store_code: storeCode,
@@ -196,6 +204,7 @@ export async function createInteraction(interaction: Omit<Interaction, 'id'>): P
     type: interaction.type,
     notes: interaction.notes,
     outcome: interaction.outcome,
+    added_by_name: fullName,
   }).select().single();
   if (error) throw error;
   return mapInteraction(data);
@@ -210,6 +219,7 @@ function mapInteraction(row: Record<string, unknown>): Interaction {
     type: row.type as InteractionType,
     notes: row.notes as string,
     outcome: row.outcome as string,
+    addedByName: (row.added_by_name as string) || undefined,
   };
 }
 
