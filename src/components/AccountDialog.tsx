@@ -49,6 +49,28 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    setForm({
+      name: account?.name || '',
+      address: account?.address || '',
+      city: account?.city || '',
+      postalCode: account?.postalCode || '',
+      accountType: (account?.accountType || 'LTC') as AccountType,
+      bedCount: account?.bedCount?.toString() || '0',
+      ownership: account?.ownership || '',
+      organization: account?.organization || '',
+      priorityTier: (account?.priorityTier || 'Medium') as PriorityTier,
+      adpVolume: account?.adpVolume || '',
+      pipelineStage: (account?.pipelineStage || 'Prospect') as PipelineStage,
+      relationshipStrength: (account?.relationshipStrength || 'New') as RelationshipStrength,
+      accountManager: account?.accountManager || '',
+      notes: account?.notes || '',
+      tags: account?.tags?.join(', ') || '',
+      accountValue: account?.accountValue?.toString() || '0',
+    });
+  }, [open, account]);
+
+  useEffect(() => {
+    if (!open) return;
     supabase
       .from('profiles')
       .select('id, full_name')

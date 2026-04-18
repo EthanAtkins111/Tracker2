@@ -39,7 +39,7 @@ export default function Opportunities() {
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 py-3 px-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors" onClick={() => navigate(`/accounts/${a.id}`)}>
       <div className="min-w-0">
         <p className="font-medium text-sm truncate">{a.name}</p>
-        <p className="text-xs text-muted-foreground truncate">{a.city} · {a.accountType}{a.vendorInfo ? ` · ${a.vendorInfo}` : ''}</p>
+        <p className="text-xs text-muted-foreground truncate">{a.city} · {a.accountType}{a.adpVolume ? ` · ADP: ${a.adpVolume}` : ''}</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         {a.bedCount > 0 && <span className="text-xs text-muted-foreground flex items-center gap-1"><Bed className="h-3 w-3" />{a.bedCount}</span>}

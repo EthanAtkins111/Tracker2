@@ -1,6 +1,5 @@
 import { LayoutDashboard, Building2, Users, CalendarClock, TrendingUp, UserCog, Settings, CircleUser, BarChart2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
@@ -32,7 +31,6 @@ const adminItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
   const { isAdmin } = useAuth();
 
   const allItems = isAdmin ? [...navItems, ...adminItems] : navItems;
