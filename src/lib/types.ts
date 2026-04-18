@@ -15,7 +15,7 @@ export interface Account {
   ownership: string;
   organization: string;
   priorityTier: PriorityTier;
-  adpVolume: string;
+  adpVolume?: string;
   relationshipStrength: RelationshipStrength;
   notes: string;
   tags: string[];
@@ -25,6 +25,7 @@ export interface Account {
   latitude?: number | null;
   longitude?: number | null;
   pipelineStage?: PipelineStage;
+  vendorInfo?: string;
 }
 
 export interface Contact {

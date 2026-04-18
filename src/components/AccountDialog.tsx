@@ -138,10 +138,10 @@ export function AccountDialog({ open, onOpenChange, account, onSaved }: Props) {
             </div>
             <div className="grid gap-1.5">
               <Label>ADP Volume</Label>
-              <Select value={form.adpVolume} onValueChange={v => update('adpVolume', v)}>
+              <Select value={form.adpVolume || 'none'} onValueChange={v => update('adpVolume', v === 'none' ? '' : v)}>
                 <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">—</SelectItem>
+                  <SelectItem value="none">—</SelectItem>
                   {adpVolumeOptions.filter(o => o).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                 </SelectContent>
               </Select>
