@@ -10,8 +10,8 @@ import { AccountDialog } from "@/components/AccountDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { fetchLastInteraction, fetchFollowUpsByAccount } from "@/lib/supabase-store";
 import { AccountType, PriorityTier, RelationshipStrength, Interaction, FollowUp } from "@/lib/types";
-import { Plus, Search, Building2, Bed, MapPin, Navigation, X } from "lucide-react";
-import { geocodeAddress, haversineDistanceKm, formatDistance, batchGeocodeAccounts } from "@/lib/geocoding";
+import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed } from "lucide-react";
+import { geocodeAddress, getCurrentLocation, haversineDistanceKm, formatDistance, batchGeocodeAccounts } from "@/lib/geocoding";
 import type { GeoCoords } from "@/lib/geocoding";
 import { toast } from "sonner";
 
@@ -67,14 +67,28 @@ export default function Accounts() {
     if (!proximityInput.trim()) return;
     setProximitySearching(true);
     setProximityOrigin(null);
-
     const coords = await geocodeAddress(proximityInput.trim() + ', Ontario, Canada');
     if (!coords) {
-      toast.error('Could not find that location. Try a full address or postal code.');
+      toast.error('Could not find that location. Try a more specific address.');
       setProximitySearching(false);
       return;
     }
+    await applyProximityOrigin(coords, proximityInput.trim());
+  };
 
+  const handleUseMyLocation = async () => {
+    setProximitySearching(true);
+    setProximityOrigin(null);
+    try {
+      const coords = await getCurrentLocation();
+      await applyProximityOrigin(coords, 'My Location');
+    } catch {
+      toast.error('Could not get your location. Please allow location access and try again.');
+      setProximitySearching(false);
+    }
+  };
+
+  const applyProximityOrigin = async (coords: GeoCoords, label: string) => {
     const missing = localAccounts.filter(a => a.latitude == null || a.longitude == null);
     if (missing.length > 0) {
       toast.info(`Locating ${missing.length} accounts — this may take a moment...`);
@@ -84,7 +98,7 @@ export default function Accounts() {
       setLocalAccounts(updated);
       setGeocodingProgress(null);
     }
-
+    setProximityInput(label);
     setProximityOrigin(coords);
     setProximitySearching(false);
   };
@@ -185,16 +199,25 @@ export default function Accounts() {
           <Input
             className="pl-9"
             placeholder="Enter address or postal code to sort by distance..."
-            value={proximityInput}
+            value={proximityOrigin ? '' : proximityInput}
             onChange={e => setProximityInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleProximitySearch()}
-            disabled={proximitySearching}
+            disabled={proximitySearching || !!proximityOrigin}
           />
         </div>
         <Button
+          variant="outline"
+          onClick={handleUseMyLocation}
+          disabled={proximitySearching || !!proximityOrigin}
+          className="shrink-0"
+          title="Use my current location"
+        >
+          <LocateFixed className="h-4 w-4" />
+        </Button>
+        <Button
           variant={proximityOrigin ? 'default' : 'outline'}
           onClick={handleProximitySearch}
-          disabled={proximitySearching || !proximityInput.trim()}
+          disabled={proximitySearching || !proximityInput.trim() || !!proximityOrigin}
           className="shrink-0"
         >
           <Navigation className="h-4 w-4 mr-1.5" />
