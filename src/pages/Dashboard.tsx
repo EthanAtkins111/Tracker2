@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import SalesDashboard from "./SalesDashboard";
+import SalesAdminDashboard from "./SalesAdminDashboard";
 import ManagerDashboard from "./ManagerDashboard";
 import RoleDashboard from "./RoleDashboard";
 
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const { role } = useAuth();
 
   if (role === 'Sales') return <SalesDashboard />;
+  if (role === 'Sales Admin') return <SalesAdminDashboard />;
   if (role === 'Manager') return <ManagerDashboard />;
   if (role === 'Service' || role === 'Retail' || role === 'Technician') return <RoleDashboard />;
   return <NoRolePrompt />;

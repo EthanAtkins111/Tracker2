@@ -57,10 +57,11 @@ export interface FollowUp {
   type: string;
   status: FollowUpStatus;
   notes: string;
+  userId?: string;
 }
 
-export type UserRole = 'Sales' | 'Manager' | 'Service' | 'Retail' | 'Technician';
-export const USER_ROLES: UserRole[] = ['Sales', 'Manager', 'Service', 'Retail', 'Technician'];
+export type UserRole = 'Sales' | 'Sales Admin' | 'Manager' | 'Service' | 'Retail' | 'Technician';
+export const USER_ROLES: UserRole[] = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail', 'Technician'];
 
 export interface StoreProfile {
   id: string;

@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const ROLES = ['Sales', 'Manager', 'Service', 'Retail', 'Technician'] as const;
+const ROLES = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail', 'Technician'] as const;
 
 export default function Profile() {
   const { user, storeCode, isAdmin, role, fullName } = useAuth();

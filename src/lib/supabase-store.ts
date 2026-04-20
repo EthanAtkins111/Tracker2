@@ -300,6 +300,7 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
     type: row.type as string,
     status: row.status as FollowUpStatus,
     notes: row.notes as string,
+    userId: (row.user_id as string) || undefined,
   };
 }
 
@@ -514,4 +515,38 @@ export async function seedRegionData(force = false): Promise<void> {
     const { error } = await supabase.from('accounts').insert(batch);
     if (error) throw error;
   }
+}
+
+// ===== SALES ADMIN ASSIGNMENTS =====
+
+export async function fetchMyAssignedRepIds(): Promise<string[]> {
+  const userId = await getUserId();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('sales_admin_assignments')
+    .select('rep_user_id')
+    .eq('admin_user_id', userId);
+  if (error) throw error;
+  return (data || []).map((r: Record<string, unknown>) => r.rep_user_id as string);
+}
+
+export async function assignRep(repUserId: string): Promise<void> {
+  const userId = await getUserId();
+  const storeCode = await getStoreCode();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('sales_admin_assignments')
+    .insert({ admin_user_id: userId, rep_user_id: repUserId, store_code: storeCode });
+  if (error) throw error;
+}
+
+export async function unassignRep(repUserId: string): Promise<void> {
+  const userId = await getUserId();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('sales_admin_assignments')
+    .delete()
+    .eq('admin_user_id', userId)
+    .eq('rep_user_id', repUserId);
+  if (error) throw error;
 }
