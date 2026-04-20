@@ -58,7 +58,7 @@ export default function ManagerDashboard() {
   const repStats = useMemo(() => {
     const salesReps = storeProfiles.filter(p => p.role === 'Sales');
     return salesReps.map(rep => {
-      const repInteractions = allInteractions.filter(i => i.addedByName === rep.fullName);
+      const repInteractions = allInteractions.filter(i => i.userId === rep.id);
       return {
         ...rep,
         weekCount: repInteractions.filter(i => i.date >= weekCutoff).length,

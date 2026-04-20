@@ -98,6 +98,9 @@ export async function editAccount(id: string, updates: Partial<Account>): Promis
 }
 
 export async function removeAccount(id: string): Promise<void> {
+  await supabase.from('follow_ups').delete().eq('account_id', id);
+  await supabase.from('interactions').delete().eq('account_id', id);
+  await supabase.from('contacts').delete().eq('account_id', id);
   const { error } = await supabase.from('accounts').delete().eq('id', id);
   if (error) throw error;
 }
@@ -241,6 +244,7 @@ function mapInteraction(row: Record<string, unknown>): Interaction {
     notes: row.notes as string,
     outcome: row.outcome as string,
     addedByName: (row.added_by_name as string) || undefined,
+    userId: (row.user_id as string) || undefined,
   };
 }
 

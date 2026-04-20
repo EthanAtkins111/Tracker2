@@ -62,7 +62,7 @@ export default function Contacts() {
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(c.id); setShowAdd(true); }}>
                   <Edit className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={async () => { await removeContact(c.id); refresh(); }}>
+                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={async () => { if (!confirm(`Remove ${c.name}?`)) return; await removeContact(c.id); refresh(); }}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>

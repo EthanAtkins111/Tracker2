@@ -47,6 +47,7 @@ export interface Interaction {
   notes: string;
   outcome: string;
   addedByName?: string;
+  userId?: string;
 }
 
 export interface FollowUp {

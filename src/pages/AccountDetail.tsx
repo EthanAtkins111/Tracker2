@@ -109,7 +109,7 @@ export default function AccountDetail() {
                   <p className="font-medium truncate">{c.name}</p>
                   <div className="flex gap-1 shrink-0">
                     <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingContact(c.id); setShowContact(true); }}><Edit className="h-3 w-3" /></Button>
-                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={async () => { await removeContact(c.id); refresh(); }}><Trash2 className="h-3 w-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={async () => { if (!confirm(`Remove ${c.name}?`)) return; await removeContact(c.id); refresh(); }}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">{c.role}</p>
