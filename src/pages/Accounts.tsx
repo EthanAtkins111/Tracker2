@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,7 @@ import { InteractionDialog } from "@/components/InteractionDialog";
 import { useCrmData } from "@/hooks/use-crm-data";
 import { fetchLastInteraction, fetchFollowUpsByAccount } from "@/lib/supabase-store";
 import { AccountType, PriorityTier, RelationshipStrength, Interaction, FollowUp } from "@/lib/types";
-import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed, Phone, Download } from "lucide-react";
+import { Plus, Search, Building2, Bed, MapPin, Navigation, X, LocateFixed, Phone, Download, Users, TrendingUp, AlertTriangle } from "lucide-react";
 import { geocodeAddress, getCurrentLocation, haversineDistanceKm, formatDistance, batchGeocodeAccounts } from "@/lib/geocoding";
 import type { GeoCoords } from "@/lib/geocoding";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ const tabTypes: { label: string; value: AccountType | 'All' }[] = [
 ];
 
 export default function Accounts() {
-  const { accounts, contacts, loading, refresh } = useCrmData();
+  const { accounts, contacts, followUps, loading, refresh } = useCrmData();
   const navigate = useNavigate();
   const [showAdd, setShowAdd] = useState(false);
   const [quickLogAccountId, setQuickLogAccountId] = useState<string | null>(null);
@@ -169,6 +169,9 @@ export default function Accounts() {
       return a.name.localeCompare(b.name);
     });
 
+  const today = new Date().toISOString().split('T')[0];
+  const overdueCount = followUps.filter(f => f.status === 'Pending' && f.dueDate <= today).length;
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -182,6 +185,43 @@ export default function Accounts() {
           </Button>
         </div>
       </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Building2 className="h-3.5 w-3.5" /> Accounts
+            </div>
+            <p className="text-2xl font-bold">{accounts.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/contacts')}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <Users className="h-3.5 w-3.5" /> Contacts
+            </div>
+            <p className="text-2xl font-bold">{contacts.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <TrendingUp className="h-3.5 w-3.5" /> High Priority
+            </div>
+            <p className="text-2xl font-bold">{accounts.filter(a => a.priorityTier === 'High').length}</p>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/follow-ups')}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Overdue
+            </div>
+            <p className="text-2xl font-bold text-destructive">{overdueCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
           {tabTypes.map(t => <TabsTrigger key={t.value} value={t.value} className="text-xs sm:text-sm">{t.label}</TabsTrigger>)}

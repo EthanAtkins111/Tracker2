@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { PriorityBadge, DaysSinceBadge, StrengthBadge } from "@/components/StatusBadges";
@@ -14,28 +13,11 @@ import { fetchInteractions } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { Account, Interaction } from "@/lib/types";
 import {
-  Plus, Phone, Building2, Users, AlertTriangle, Clock, LogOut,
-  Flame, Target, Trophy, Star, ChevronRight, TrendingUp, CalendarClock,
-  MapPin, Sparkles, Pencil, Check, X,
+  Plus, Phone, Clock, LogOut,
+  Star, ChevronRight, CalendarClock,
+  Sparkles, Pencil, Check, X, AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const WEEKLY_GOAL = 10;
-
-const TYPE_POINTS: Record<string, number> = {
-  Visit: 10, Demo: 15, Call: 5, Email: 3, 'Service Follow-up': 7,
-};
-
-const RANKS = [
-  { min: 300, label: 'Territory Lead', color: 'text-amber-500',        bg: 'bg-amber-100 dark:bg-amber-900/30',   next: null },
-  { min: 150, label: 'Senior Rep',     color: 'text-purple-500',       bg: 'bg-purple-100 dark:bg-purple-900/30', next: 300 },
-  { min: 50,  label: 'Field Rep',      color: 'text-blue-500',         bg: 'bg-blue-100 dark:bg-blue-900/30',     next: 150 },
-  { min: 0,   label: 'Rookie',         color: 'text-muted-foreground', bg: 'bg-muted',                            next: 50  },
-];
-
-function getRank(score: number) {
-  return RANKS.find(r => score >= r.min) ?? RANKS[RANKS.length - 1];
-}
 
 // ── Pinned account picker dialog ────────────────────────────────────────────
 interface PickerProps {
@@ -189,52 +171,6 @@ export default function Dashboard() {
     return Math.floor((Date.now() - new Date(last.date).getTime()) / 86400000);
   };
 
-  // ── Gamification stats ─────────────────────────────────────────────────────
-  const streak = useMemo(() => {
-    if (!allInteractions.length) return 0;
-    const dates = new Set(allInteractions.map(i => i.date.split('T')[0]));
-    let count = 0;
-    const check = new Date();
-    if (!dates.has(check.toISOString().split('T')[0])) check.setDate(check.getDate() - 1);
-    while (dates.has(check.toISOString().split('T')[0])) {
-      count++;
-      check.setDate(check.getDate() - 1);
-    }
-    return count;
-  }, [allInteractions]);
-
-  const weeklyCount = useMemo(() => {
-    const cutoff = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-    return allInteractions.filter(i => i.date >= cutoff).length;
-  }, [allInteractions]);
-
-  const monthlyScore = useMemo(() => {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    const cutoff = monthStart.toISOString().split('T')[0];
-    return allInteractions
-      .filter(i => i.date >= cutoff)
-      .reduce((sum, i) => {
-        const pts = TYPE_POINTS[i.type] ?? 5;
-        const acct = accounts.find(a => a.id === i.accountId);
-        const multiplier = acct?.priorityTier === 'High' ? 2 : acct?.priorityTier === 'Medium' ? 1.5 : 1;
-        return sum + Math.round(pts * multiplier);
-      }, 0);
-  }, [allInteractions, accounts]);
-
-  const coveragePercent = useMemo(() => {
-    if (!accounts.length) return 0;
-    const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const visited = new Set(allInteractions.filter(i => i.date >= cutoff).map(i => i.accountId));
-    return Math.round((visited.size / accounts.length) * 100);
-  }, [accounts, allInteractions]);
-
-  const rank             = getRank(monthlyScore);
-  const nextThreshold    = rank.next;
-  const rankProgress     = nextThreshold ? Math.min(100, Math.round((monthlyScore / nextThreshold) * 100)) : 100;
-  const weeklyPct        = Math.min(100, Math.round((weeklyCount / WEEKLY_GOAL) * 100));
-
   // ── Pinned sections ────────────────────────────────────────────────────────
   const pinnedTop5 = useMemo(
     () => pinnedTop5Ids.map(id => accounts.find(a => a.id === id)).filter(Boolean) as Account[],
@@ -284,73 +220,6 @@ export default function Dashboard() {
             <LogOut className="h-3.5 w-3.5" />
           </Button>
         </div>
-      </div>
-
-      {/* Gamification Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border-orange-200 dark:border-orange-800/40 bg-gradient-to-br from-orange-50 to-background dark:from-orange-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs font-medium text-muted-foreground">Day Streak</span>
-            </div>
-            <p className="text-3xl font-bold text-orange-500">{streak}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {streak === 0 ? 'Log today to start' : streak === 1 ? 'Keep it going!' : `${streak} days in a row`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-200 dark:border-blue-800/40 bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="h-4 w-4 text-blue-500" />
-              <span className="text-xs font-medium text-muted-foreground">Weekly Goal</span>
-            </div>
-            <p className="text-3xl font-bold text-blue-500">
-              {weeklyCount}<span className="text-sm font-normal text-muted-foreground">/{WEEKLY_GOAL}</span>
-            </p>
-            <Progress value={weeklyPct} className="mt-2 h-1.5" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {weeklyCount >= WEEKLY_GOAL ? '🎉 Goal reached!' : `${WEEKLY_GOAL - weeklyCount} more to go`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-purple-200 dark:border-purple-800/40 bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="h-4 w-4 text-purple-500" />
-              <span className="text-xs font-medium text-muted-foreground">Monthly Score</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-purple-500">{monthlyScore}</p>
-              <span className={cn("text-xs font-semibold px-1.5 py-0.5 rounded-full", rank.bg, rank.color)}>{rank.label}</span>
-            </div>
-            {nextThreshold ? (
-              <>
-                <Progress value={rankProgress} className="mt-2 h-1.5" />
-                <p className="text-xs text-muted-foreground mt-1">{nextThreshold - monthlyScore} pts to next rank</p>
-              </>
-            ) : (
-              <p className="text-xs text-amber-500 mt-2 font-medium">Max rank achieved!</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200 dark:border-green-800/40 bg-gradient-to-br from-green-50 to-background dark:from-green-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="h-4 w-4 text-green-500" />
-              <span className="text-xs font-medium text-muted-foreground">30-Day Coverage</span>
-            </div>
-            <p className="text-3xl font-bold text-green-500">
-              {coveragePercent}<span className="text-sm font-normal text-muted-foreground">%</span>
-            </p>
-            <Progress value={coveragePercent} className="mt-2 h-1.5" />
-            <p className="text-xs text-muted-foreground mt-1">of {accounts.length} accounts visited</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Top 5 Accounts + Top 3 Opportunities */}
@@ -486,42 +355,6 @@ export default function Dashboard() {
                 </div>
               ))
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/accounts')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Building2 className="h-3.5 w-3.5" /> Accounts
-            </div>
-            <p className="text-2xl font-bold">{accounts.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/contacts')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Users className="h-3.5 w-3.5" /> Contacts
-            </div>
-            <p className="text-2xl font-bold">{contacts.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <TrendingUp className="h-3.5 w-3.5" /> High Priority
-            </div>
-            <p className="text-2xl font-bold">{accounts.filter(a => a.priorityTier === 'High').length}</p>
-          </CardContent>
-        </Card>
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate('/follow-ups')}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Overdue
-            </div>
-            <p className="text-2xl font-bold text-destructive">{dueToday.length}</p>
           </CardContent>
         </Card>
       </div>
