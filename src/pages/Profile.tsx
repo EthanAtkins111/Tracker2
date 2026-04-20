@@ -8,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { LogOut } from 'lucide-react';
 
-const ROLES = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail', 'Technician'] as const;
+const ROLES = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail'] as const;
 
 export default function Profile() {
-  const { user, storeCode, isAdmin, role, fullName } = useAuth();
+  const { user, storeCode, isAdmin, role, fullName, signOut } = useAuth();
 
   const [firstName, setFirstName] = useState(() => fullName ? fullName.split(' ')[0] : '');
   const [lastName, setLastName] = useState(() => fullName ? fullName.split(' ').slice(1).join(' ') : '');
@@ -105,6 +106,10 @@ export default function Profile() {
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </Card>
+
+      <Button variant="outline" className="w-full text-destructive hover:text-destructive" onClick={signOut}>
+        <LogOut className="mr-2 h-4 w-4" /> Sign Out
+      </Button>
     </div>
   );
 }

@@ -22,6 +22,6 @@ export default function Dashboard() {
   if (role === 'Sales') return <SalesDashboard />;
   if (role === 'Sales Admin') return <SalesAdminDashboard />;
   if (role === 'Manager') return <ManagerDashboard />;
-  if (role === 'Service' || role === 'Retail' || role === 'Technician') return <RoleDashboard />;
+  if (role === 'Service' || role === 'Retail') return <RoleDashboard />;
   return <NoRolePrompt />;
 }

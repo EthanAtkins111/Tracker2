@@ -60,8 +60,8 @@ export interface FollowUp {
   userId?: string;
 }
 
-export type UserRole = 'Sales' | 'Sales Admin' | 'Manager' | 'Service' | 'Retail' | 'Technician';
-export const USER_ROLES: UserRole[] = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail', 'Technician'];
+export type UserRole = 'Sales' | 'Sales Admin' | 'Manager' | 'Service' | 'Retail';
+export const USER_ROLES: UserRole[] = ['Sales', 'Sales Admin', 'Manager', 'Service', 'Retail'];
 
 export interface StoreProfile {
   id: string;
