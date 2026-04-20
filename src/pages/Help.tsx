@@ -34,7 +34,7 @@ const sections: FeatureSection[] = [
     description: "The full list of every facility in your territory. Filter, sort, search, and plan your route.",
     tips: [
       "Summary cards at the top show total accounts, contacts, high-priority accounts, and overdue follow-ups at a glance.",
-      "Use the tabs at the top to filter by account type (LTC, Retirement, Hospital, Clinic, Group Home).",
+      "Use the tabs at the top to filter by account type (LTC, Retirement, Hospital, Clinic, Group Home, Organization).",
       "Filter by City, Priority, or Relationship Strength to zero in on a specific segment.",
       "Sort by 'Follow-up Urgency' to automatically surface accounts that need attention most.",
       "Proximity Search: enter a postal code or address (or click 'Use My Location') to re-sort all accounts by distance — great for planning a day route.",

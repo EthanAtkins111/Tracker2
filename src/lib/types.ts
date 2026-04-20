@@ -1,4 +1,4 @@
-export type AccountType = 'LTC' | 'Retirement' | 'Hospital' | 'Clinic' | 'Group Home';
+export type AccountType = 'LTC' | 'Retirement' | 'Hospital' | 'Clinic' | 'Group Home' | 'Organization';
 export type PriorityTier = 'High' | 'Medium' | 'Low';
 export type RelationshipStrength = 'Strong' | 'Moderate' | 'Weak' | 'New';
 export type PipelineStage = 'Prospect' | 'Contacted' | 'Engaged' | 'Demo' | 'Active' | 'Lost';

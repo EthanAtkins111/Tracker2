@@ -23,6 +23,7 @@ const tabTypes: { label: string; value: AccountType | 'All' }[] = [
   { label: 'Hospital', value: 'Hospital' },
   { label: 'Clinic', value: 'Clinic' },
   { label: 'Group Home', value: 'Group Home' },
+  { label: 'Organization', value: 'Organization' },
 ];
 
 export default function Accounts() {

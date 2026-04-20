@@ -10,7 +10,7 @@ import { createAccount, editAccount } from "@/lib/supabase-store";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 'Group Home'];
+const accountTypes: AccountType[] = ['LTC', 'Retirement', 'Hospital', 'Clinic', 'Group Home', 'Organization'];
 const priorities: PriorityTier[] = ['High', 'Medium', 'Low'];
 const strengths: RelationshipStrength[] = ['Strong', 'Moderate', 'Weak', 'New'];
 const pipelineStages: PipelineStage[] = ['Prospect', 'Contacted', 'Engaged', 'Demo', 'Active', 'Lost'];
