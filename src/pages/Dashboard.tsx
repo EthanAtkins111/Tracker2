@@ -13,7 +13,7 @@ import { fetchInteractions } from "@/lib/supabase-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { Account, Interaction } from "@/lib/types";
 import {
-  Plus, Phone, Clock, LogOut,
+  Plus, Phone, Clock, LogOut, Building2,
   Star, ChevronRight, CalendarClock,
   Sparkles, Pencil, Check, X, AlertTriangle,
 } from "lucide-react";
