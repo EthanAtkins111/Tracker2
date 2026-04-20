@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Account, Contact, Interaction, FollowUp, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus, PipelineStage } from './types';
+import { Account, Contact, Interaction, FollowUp, StoreProfile, AccountType, PriorityTier, RelationshipStrength, InteractionType, FollowUpStatus, PipelineStage } from './types';
 import { geocodeAddress } from './geocoding';
 
 async function getUserId(): Promise<string> {
@@ -301,6 +301,66 @@ function mapFollowUp(row: Record<string, unknown>): FollowUp {
     status: row.status as FollowUpStatus,
     notes: row.notes as string,
   };
+}
+
+// ===== ROLE-SCOPED FETCHES =====
+
+export async function fetchMyInteractions(): Promise<Interaction[]> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('interactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapInteraction);
+}
+
+export async function fetchMyFollowUps(): Promise<FollowUp[]> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('follow_ups')
+    .select('*')
+    .eq('user_id', userId)
+    .order('due_date');
+  if (error) throw error;
+  return (data || []).map(mapFollowUp);
+}
+
+export async function fetchStoreProfiles(): Promise<StoreProfile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, email')
+    .eq('approved', true);
+  if (error) throw error;
+  return (data || []).map(row => ({
+    id: row.id as string,
+    fullName: ((row.full_name as string) || (row.email as string) || 'Unknown'),
+    role: (row.role as string) || '',
+    email: (row.email as string) || '',
+  }));
+}
+
+export async function fetchInteractionsByUserIds(userIds: string[]): Promise<Interaction[]> {
+  if (!userIds.length) return [];
+  const { data, error } = await supabase
+    .from('interactions')
+    .select('*')
+    .in('user_id', userIds)
+    .order('date', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapInteraction);
+}
+
+export async function fetchFollowUpsByUserIds(userIds: string[]): Promise<FollowUp[]> {
+  if (!userIds.length) return [];
+  const { data, error } = await supabase
+    .from('follow_ups')
+    .select('*')
+    .in('user_id', userIds)
+    .order('due_date');
+  if (error) throw error;
+  return (data || []).map(mapFollowUp);
 }
 
 // ===== DEDUPLICATE ACCOUNTS =====

@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { USER_ROLES } from '@/lib/types';
 import { toast } from 'sonner';
 
 export default function Auth() {
@@ -18,6 +20,7 @@ export default function Auth() {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
   const [signupStoreCode, setSignupStoreCode] = useState('');
+  const [signupRole, setSignupRole] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,25 +33,14 @@ export default function Auth() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (signupPassword !== signupConfirm) {
-      toast.error('Passwords do not match');
-      return;
-    }
-    if (signupPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-    if (!signupFirstName.trim() || !signupLastName.trim()) {
-      toast.error('First and last name are required');
-      return;
-    }
-    if (!signupStoreCode.trim()) {
-      toast.error('Store code is required');
-      return;
-    }
+    if (signupPassword !== signupConfirm) { toast.error('Passwords do not match'); return; }
+    if (signupPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (!signupFirstName.trim() || !signupLastName.trim()) { toast.error('First and last name are required'); return; }
+    if (!signupStoreCode.trim()) { toast.error('Store code is required'); return; }
+    if (!signupRole) { toast.error('Please select your role'); return; }
     setLoading(true);
     const fullName = `${signupFirstName.trim()} ${signupLastName.trim()}`;
-    const { error } = await signUp(signupEmail, signupPassword, signupStoreCode, fullName);
+    const { error } = await signUp(signupEmail, signupPassword, signupStoreCode, fullName, signupRole);
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -122,6 +114,19 @@ export default function Auth() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">Enter the store code provided by your manager.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Role</Label>
+                  <Select value={signupRole} onValueChange={setSignupRole} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {USER_ROLES.map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Create Account'}

@@ -58,3 +58,13 @@ export interface FollowUp {
   status: FollowUpStatus;
   notes: string;
 }
+
+export type UserRole = 'Sales' | 'Manager' | 'Service' | 'Retail' | 'Technician';
+export const USER_ROLES: UserRole[] = ['Sales', 'Manager', 'Service', 'Retail', 'Technician'];
+
+export interface StoreProfile {
+  id: string;
+  fullName: string;
+  role: string;
+  email: string;
+}
